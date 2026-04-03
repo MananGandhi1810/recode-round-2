@@ -76,7 +76,7 @@ export default function LoginPage() {
         <header className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs tracking-[0.32em] text-muted-foreground uppercase">
-              Fluxboard
+              FormBar
             </p>
             <p className="mt-2 text-lg font-medium">Sign in to continue</p>
           </div>
@@ -112,7 +112,7 @@ export default function LoginPage() {
             {step === "request" ? (
               <form
                 onSubmit={requestOtp}
-                className="rounded-3xl border border-border/60 bg-background/75 p-5"
+                className="rounded-3xl border border-border/60 bg-background/75 p-5 transition-colors duration-500"
               >
                 <div className="flex items-center gap-3 text-sm font-medium">
                   <Mail className="size-4 text-primary" />
@@ -123,7 +123,7 @@ export default function LoginPage() {
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     placeholder="Full name"
-                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm transition outline-none focus:border-ring"
+                    className="h-11 rounded-2xl border border-input/50 bg-background/50 px-4 text-sm transition outline-none focus:border-primary"
                     required
                   />
                   <input
@@ -131,13 +131,13 @@ export default function LoginPage() {
                     onChange={(event) => setEmail(event.target.value)}
                     type="email"
                     placeholder="Email address"
-                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm transition outline-none focus:border-ring"
+                    className="h-11 rounded-2xl border border-input/50 bg-background/50 px-4 text-sm transition outline-none focus:border-primary"
                     required
                   />
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-11 rounded-2xl"
+                    className="h-11 rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"
                   >
                     {loading ? (
                       <Loader2 className="mr-2 size-4 animate-spin" />
@@ -151,13 +151,13 @@ export default function LoginPage() {
             ) : (
               <form
                 onSubmit={verifyOtp}
-                className="rounded-3xl border border-border/60 bg-background/75 p-5"
+                className="rounded-3xl border border-border/60 bg-background/75 p-5 transition-colors duration-500"
               >
                 <div className="flex items-center gap-3 text-sm font-medium">
                   <ShieldCheck className="size-4 text-primary" />
                   Step 2 of 2 · Verify OTP
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 text-sm opacity-80">
                   We sent a code to {email}. Enter it below to continue.
                 </p>
                 <div className="mt-4 grid gap-3">
@@ -167,13 +167,13 @@ export default function LoginPage() {
                     inputMode="numeric"
                     maxLength={6}
                     placeholder="6-digit code"
-                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm transition outline-none focus:border-ring"
+                    className="h-11 rounded-2xl border border-input/50 bg-background/50 px-4 text-sm transition outline-none focus:border-primary"
                     required
                   />
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-11 rounded-2xl"
+                    className="h-11 rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"
                   >
                     <CheckCircle2 className="mr-2 size-4" />
                     Verify and continue

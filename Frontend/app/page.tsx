@@ -62,7 +62,7 @@ export default function Page() {
             </div>
             <div>
               <p className="text-xs tracking-[0.32em] text-muted-foreground uppercase">
-                Fluxboard
+                FormBar
               </p>
               <p className="text-sm text-muted-foreground">
                 A modern SaaS for forms, teams, and growth
@@ -88,7 +88,7 @@ export default function Page() {
               disguised as software.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-              Fluxboard combines polished public forms, secure OTP login, and
+              FormBar combines polished public forms, secure OTP login, and
               organization onboarding into a SaaS experience that feels clear
               from the first click.
             </p>

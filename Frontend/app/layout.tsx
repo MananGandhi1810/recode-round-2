@@ -12,7 +12,7 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata = {
-  title: "Fluxboard",
+  title: "FormBar",
   description:
     "A modern SaaS landing page with OTP auth and organization onboarding.",
 }
