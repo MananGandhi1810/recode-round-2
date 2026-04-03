@@ -4,7 +4,15 @@ import * as React from "react"
 
 import Link from "next/link"
 
-import { ArrowRight, BarChart3, Blocks, CheckCircle2, LockKeyhole, Sparkles, Users } from "lucide-react"
+import {
+  ArrowRight,
+  BarChart3,
+  Blocks,
+  CheckCircle2,
+  LockKeyhole,
+  Sparkles,
+  Users,
+} from "lucide-react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -13,22 +21,26 @@ const features = [
   {
     icon: Blocks,
     title: "Brand-first forms",
-    description: "Ship polished signup, survey, and intake flows without wrestling a builder UI.",
+    description:
+      "Ship polished signup, survey, and intake flows without wrestling a builder UI.",
   },
   {
     icon: Users,
     title: "Workspace collaboration",
-    description: "Bring teams into the same account with role-based access and clean org boundaries.",
+    description:
+      "Bring teams into the same account with role-based access and clean org boundaries.",
   },
   {
     icon: BarChart3,
     title: "Live response insights",
-    description: "Track submissions, activation, and conversion from one command center.",
+    description:
+      "Track submissions, activation, and conversion from one command center.",
   },
   {
     icon: LockKeyhole,
     title: "Secure by default",
-    description: "Email OTP sign-in, cookie sessions, and an onboarding flow that starts after login.",
+    description:
+      "Email OTP sign-in, cookie sessions, and an onboarding flow that starts after login.",
   },
 ]
 
@@ -49,8 +61,12 @@ export default function Page() {
               <Sparkles className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.32em] text-muted-foreground">Fluxboard</p>
-              <p className="text-sm text-muted-foreground">A modern SaaS for forms, teams, and growth</p>
+              <p className="text-xs tracking-[0.32em] text-muted-foreground uppercase">
+                Fluxboard
+              </p>
+              <p className="text-sm text-muted-foreground">
+                A modern SaaS for forms, teams, and growth
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -68,10 +84,13 @@ export default function Page() {
               Tally-style simplicity, built for real teams
             </div>
             <h1 className="mt-6 text-5xl font-semibold tracking-tight sm:text-6xl">
-              Launch beautiful workflows for your product, not a spreadsheet disguised as software.
+              Launch beautiful workflows for your product, not a spreadsheet
+              disguised as software.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
-              Fluxboard combines polished public forms, secure OTP login, and organization onboarding into a SaaS experience that feels clear from the first click.
+              Fluxboard combines polished public forms, secure OTP login, and
+              organization onboarding into a SaaS experience that feels clear
+              from the first click.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -81,16 +100,26 @@ export default function Page() {
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-2xl px-6">
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="rounded-2xl px-6"
+              >
                 <Link href="/dashboard">See onboarding flow</Link>
               </Button>
             </div>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {stats.map((stat) => (
-                <div key={stat.label} className="rounded-3xl border border-border/70 bg-background/70 p-5 backdrop-blur">
+                <div
+                  key={stat.label}
+                  className="rounded-3xl border border-border/70 bg-background/70 p-5 backdrop-blur"
+                >
                   <p className="text-2xl font-semibold">{stat.value}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {stat.label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -102,7 +131,9 @@ export default function Page() {
               <div className="rounded-[1.5rem] border border-border/60 bg-background/80 p-5">
                 <div className="flex items-center justify-between border-b border-border/60 pb-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Workspace preview</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Workspace preview
+                    </p>
                     <p className="mt-1 text-xl font-semibold">Acme Studio</p>
                   </div>
                   <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
@@ -141,7 +172,9 @@ export default function Page() {
                 <div className="mt-5 rounded-3xl border border-dashed border-border/70 bg-muted/30 p-4">
                   <p className="text-sm font-medium">Why it works</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Marketing gets a premium landing page. Auth lives at <span className="text-foreground">/login</span>. Organization setup happens after sign-in, where it belongs.
+                    Marketing gets a premium landing page. Auth lives at{" "}
+                    <span className="text-foreground">/login</span>.
+                    Organization setup happens after sign-in, where it belongs.
                   </p>
                 </div>
               </div>
@@ -153,12 +186,17 @@ export default function Page() {
           {features.map((feature) => {
             const Icon = feature.icon
             return (
-              <article key={feature.title} className="rounded-[1.75rem] border border-border/70 bg-card/80 p-5 backdrop-blur">
+              <article
+                key={feature.title}
+                className="rounded-[1.75rem] border border-border/70 bg-card/80 p-5 backdrop-blur"
+              >
                 <div className="flex size-11 items-center justify-center rounded-2xl border border-border/70 bg-background/80">
                   <Icon className="size-5 text-primary" />
                 </div>
                 <h2 className="mt-4 text-lg font-semibold">{feature.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{feature.description}</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {feature.description}
+                </p>
               </article>
             )
           })}

@@ -3,11 +3,31 @@
 import * as React from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Check, FilePlus2, Loader2, MousePointer2, Trash2, Users, GripVertical, Plus, Settings2, Component } from "lucide-react"
+import {
+  ArrowLeft,
+  Check,
+  FilePlus2,
+  Loader2,
+  MousePointer2,
+  Trash2,
+  Users,
+  GripVertical,
+  Plus,
+  Settings2,
+  Component,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { apiFetch } from "@/lib/api"
-import { applyFormEvent, type FormBlock, type FormEventPayload, type FormRecord, getWsBaseUrl, type LogicRule, type LogicCondition } from "@/lib/forms"
+import {
+  applyFormEvent,
+  type FormBlock,
+  type FormEventPayload,
+  type FormRecord,
+  getWsBaseUrl,
+  type LogicRule,
+  type LogicCondition,
+} from "@/lib/forms"
 
 type PresenceUser = {
   userId: string
@@ -50,14 +70,14 @@ function defaultBlock(): FormBlock {
   }
 }
 
-function BlockItem({ 
-  block, 
+function BlockItem({
+  block,
   allBlocks,
   addBlockBase,
-  onChange, 
-  onBlur, 
-  onRemove 
-}: { 
+  onChange,
+  onBlur,
+  onRemove,
+}: {
   block: FormBlock
   allBlocks: FormBlock[]
   addBlockBase: (index: number) => void
@@ -67,10 +87,12 @@ function BlockItem({
 }) {
   const [showLogic, setShowLogic] = React.useState(false)
 
-  const handleLabelKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleLabelKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      const index = allBlocks.findIndex(b => b.id === block.id)
+      const index = allBlocks.findIndex((b) => b.id === block.id)
       addBlockBase(index + 1)
     }
   }
@@ -81,14 +103,20 @@ function BlockItem({
         id: crypto.randomUUID(),
         action: "show",
         conditionMatch: "all",
-        conditions: [{ blockId: "", operator: "equals", value: "" }]
+        conditions: [{ blockId: "", operator: "equals", value: "" }],
       }
-      return { ...b, config: { ...b.config, logic: [...(b.config.logic || []), newRule] } }
+      return {
+        ...b,
+        config: { ...b.config, logic: [...(b.config.logic || []), newRule] },
+      }
     })
     onBlur(block.id)
   }
 
-  const updateLogicRule = (index: number, updater: (r: LogicRule) => LogicRule) => {
+  const updateLogicRule = (
+    index: number,
+    updater: (r: LogicRule) => LogicRule
+  ) => {
     onChange(block.id, (b) => {
       const currentLogic = b.config.logic || []
       const newLogic = [...currentLogic]
@@ -100,24 +128,42 @@ function BlockItem({
     onBlur(block.id)
   }
 
-  const TypeIcon = block.type === "h1" || block.type === "h2" ? "H" : (block.type === "paragraph" ? "P" : "T")
+  const TypeIcon =
+    block.type === "h1" || block.type === "h2"
+      ? "H"
+      : block.type === "paragraph"
+        ? "P"
+        : "T"
 
   return (
     <div className="group relative -ml-12 flex items-start py-1">
-      <div className="flex w-12 items-center justify-end pr-2 pt-1 opacity-0 transition-opacity group-hover:opacity-100">
-        <button type="button" onClick={() => addBlockBase(allBlocks.findIndex(b => b.id === block.id) + 1)} className="rounded-sm p-1 text-muted-foreground hover:bg-muted"><Plus className="h-4 w-4" /></button>
-        <button type="button" className="cursor-grab rounded-sm p-1 text-muted-foreground hover:bg-muted"><GripVertical className="h-4 w-4" /></button>
+      <div className="flex w-12 items-center justify-end pt-1 pr-2 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          type="button"
+          onClick={() =>
+            addBlockBase(allBlocks.findIndex((b) => b.id === block.id) + 1)
+          }
+          className="rounded-sm p-1 text-muted-foreground hover:bg-muted"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          className="cursor-grab rounded-sm p-1 text-muted-foreground hover:bg-muted"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col rounded-[8px] border border-transparent p-2 transition-colors hover:border-border/50 focus-within:bg-muted/10">
+      <div className="flex min-w-0 flex-1 flex-col rounded-[8px] border border-transparent p-2 transition-colors focus-within:bg-muted/10 hover:border-border/50">
         <div className="flex items-center gap-2">
-          <select 
+          <select
             value={block.type}
             onChange={(e) => {
               onChange(block.id, (b) => ({ ...b, type: e.target.value }))
               onBlur(block.id)
             }}
-            className="h-7 w-auto cursor-pointer appearance-none rounded-md border-0 bg-transparent px-2 py-1 text-xs font-semibold uppercase text-muted-foreground outline-none hover:bg-muted focus:ring-0"
+            className="h-7 w-auto cursor-pointer appearance-none rounded-md border-0 bg-transparent px-2 py-1 text-xs font-semibold text-muted-foreground uppercase outline-none hover:bg-muted focus:ring-0"
           >
             <option value="h1">Heading 1</option>
             <option value="h2">Heading 2</option>
@@ -126,17 +172,17 @@ function BlockItem({
             <option value="long_text">Long Text</option>
           </select>
           <div className="flex-1" />
-          <button 
-            type="button" 
-            onClick={() => setShowLogic(!showLogic)} 
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground group-hover:opacity-100"
+          <button
+            type="button"
+            onClick={() => setShowLogic(!showLogic)}
+            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground"
           >
             <Settings2 className="h-4 w-4" />
           </button>
-          <button 
-            type="button" 
-            onClick={() => onRemove(block.id)} 
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+          <button
+            type="button"
+            onClick={() => onRemove(block.id)}
+            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -145,14 +191,24 @@ function BlockItem({
         <div className="mt-1">
           <input
             value={block.label}
-            onChange={(e) => onChange(block.id, (b) => ({ ...b, label: e.target.value }))}
+            onChange={(e) =>
+              onChange(block.id, (b) => ({ ...b, label: e.target.value }))
+            }
             onBlur={() => onBlur(block.id)}
             onKeyDown={handleLabelKeyDown}
-            placeholder={block.type.startsWith("h") ? "Heading..." : block.type === "paragraph" ? "Type something..." : "Question..."}
+            placeholder={
+              block.type.startsWith("h")
+                ? "Heading..."
+                : block.type === "paragraph"
+                  ? "Type something..."
+                  : "Question..."
+            }
             className={`w-full border-0 bg-transparent px-0 py-1 outline-none placeholder:text-muted-foreground/50 focus:ring-0 ${
-              block.type === 'h1' ? 'text-3xl font-bold' : 
-              block.type === 'h2' ? 'text-xl font-bold' : 
-              'text-base'
+              block.type === "h1"
+                ? "text-3xl font-bold"
+                : block.type === "h2"
+                  ? "text-xl font-bold"
+                  : "text-base"
             }`}
           />
         </div>
@@ -161,9 +217,22 @@ function BlockItem({
         {(block.type === "short_text" || block.type === "long_text") && (
           <div className="mt-2">
             {block.type === "short_text" ? (
-              <input disabled className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground opacity-50" placeholder={block.config.placeholder || "Type your answer here..."} />
+              <input
+                disabled
+                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground opacity-50"
+                placeholder={
+                  block.config.placeholder || "Type your answer here..."
+                }
+              />
             ) : (
-               <textarea disabled rows={3} className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground opacity-50" placeholder={block.config.placeholder || "Type your answer here..."} />
+              <textarea
+                disabled
+                rows={3}
+                className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground opacity-50"
+                placeholder={
+                  block.config.placeholder || "Type your answer here..."
+                }
+              />
             )}
           </div>
         )}
@@ -171,20 +240,38 @@ function BlockItem({
         {showLogic && (
           <div className="mt-4 rounded-md border border-border bg-card p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase text-muted-foreground">Logic & conditions</span>
-              <button type="button" onClick={addLogicRule} className="text-xs text-primary hover:underline">+ Add rule</button>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">
+                Logic & conditions
+              </span>
+              <button
+                type="button"
+                onClick={addLogicRule}
+                className="text-xs text-primary hover:underline"
+              >
+                + Add rule
+              </button>
             </div>
-            
+
             {(block.config.logic || []).length === 0 ? (
-              <p className="text-xs text-muted-foreground">No logic applied to this block.</p>
+              <p className="text-xs text-muted-foreground">
+                No logic applied to this block.
+              </p>
             ) : (
               <div className="space-y-2">
                 {(block.config.logic || []).map((rule, idx) => (
-                  <div key={rule.id} className="flex flex-col gap-2 rounded bg-muted/30 p-2 text-sm border-l-2 border-primary">
+                  <div
+                    key={rule.id}
+                    className="flex flex-col gap-2 rounded border-l-2 border-primary bg-muted/30 p-2 text-sm"
+                  >
                     <div className="flex items-center gap-2">
-                      <select 
+                      <select
                         value={rule.action}
-                        onChange={(e) => updateLogicRule(idx, r => ({ ...r, action: e.target.value as "show"|"hide" }))}
+                        onChange={(e) =>
+                          updateLogicRule(idx, (r) => ({
+                            ...r,
+                            action: e.target.value as "show" | "hide",
+                          }))
+                        }
                         className="h-7 rounded border border-input bg-background px-2 text-xs"
                       >
                         <option value="show">Show</option>
@@ -193,44 +280,70 @@ function BlockItem({
                       <span>this block if</span>
                       <select
                         value={rule.conditionMatch}
-                        onChange={(e) => updateLogicRule(idx, r => ({ ...r, conditionMatch: e.target.value as "all"|"any" }))}
+                        onChange={(e) =>
+                          updateLogicRule(idx, (r) => ({
+                            ...r,
+                            conditionMatch: e.target.value as "all" | "any",
+                          }))
+                        }
                         className="h-7 rounded border border-input bg-background px-2 text-xs"
                       >
                         <option value="all">all</option>
                         <option value="any">any</option>
                       </select>
                       <span>of the following match:</span>
-                      <button type="button" onClick={() => {
-                        const newLogic = [...(block.config.logic || [])]
-                        newLogic.splice(idx, 1)
-                        onChange(block.id, b => ({ ...b, config: { ...b.config, logic: newLogic } }))
-                        onBlur(block.id)
-                      }} className="ml-auto text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newLogic = [...(block.config.logic || [])]
+                          newLogic.splice(idx, 1)
+                          onChange(block.id, (b) => ({
+                            ...b,
+                            config: { ...b.config, logic: newLogic },
+                          }))
+                          onBlur(block.id)
+                        }}
+                        className="ml-auto text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
 
                     {rule.conditions.map((cond, cIdx) => (
-                      <div key={cIdx} className="ml-4 flex flex-wrap items-center gap-2">
+                      <div
+                        key={cIdx}
+                        className="ml-4 flex flex-wrap items-center gap-2"
+                      >
                         <select
                           value={cond.blockId}
                           onChange={(e) => {
-                            updateLogicRule(idx, r => {
+                            updateLogicRule(idx, (r) => {
                               const newConds = [...r.conditions]
                               newConds[cIdx].blockId = e.target.value
                               return { ...r, conditions: newConds }
                             })
                           }}
-                          className="h-7 rounded border border-input bg-background px-2 text-xs max-w-[150px] truncate"
+                          className="h-7 max-w-[150px] truncate rounded border border-input bg-background px-2 text-xs"
                         >
                           <option value="">Select block...</option>
-                          {allBlocks.filter(b => b.id !== block.id && (b.type === "short_text" || b.type === "long_text")).map(b => (
-                            <option key={b.id} value={b.id}>{b.label || 'Untitled'}</option>
-                          ))}
+                          {allBlocks
+                            .filter(
+                              (b) =>
+                                b.id !== block.id &&
+                                (b.type === "short_text" ||
+                                  b.type === "long_text")
+                            )
+                            .map((b) => (
+                              <option key={b.id} value={b.id}>
+                                {b.label || "Untitled"}
+                              </option>
+                            ))}
                         </select>
-                        
+
                         <select
                           value={cond.operator}
                           onChange={(e) => {
-                            updateLogicRule(idx, r => {
+                            updateLogicRule(idx, (r) => {
                               const newConds = [...r.conditions]
                               newConds[cIdx].operator = e.target.value as any
                               return { ...r, conditions: newConds }
@@ -245,41 +358,57 @@ function BlockItem({
                           <option value="is_not_empty">Is not empty</option>
                         </select>
 
-                        {!["is_empty", "is_not_empty"].includes(cond.operator) && (
-                          <input 
+                        {!["is_empty", "is_not_empty"].includes(
+                          cond.operator
+                        ) && (
+                          <input
                             value={cond.value}
                             onChange={(e) => {
-                              updateLogicRule(idx, r => {
+                              updateLogicRule(idx, (r) => {
                                 const newConds = [...r.conditions]
                                 newConds[cIdx].value = e.target.value
                                 return { ...r, conditions: newConds }
                               })
                             }}
-                            className="h-7 rounded border border-input bg-background px-2 text-xs w-32"
+                            className="h-7 w-32 rounded border border-input bg-background px-2 text-xs"
                             placeholder="Value..."
                           />
                         )}
-                        
-                        <button type="button" onClick={() => {
-                           updateLogicRule(idx, r => {
-                             const newConds = [...r.conditions]
-                             if (newConds.length > 1) {
-                               newConds.splice(cIdx, 1)
-                               return { ...r, conditions: newConds }
-                             }
-                             return r
-                           })
-                        }} className="text-muted-foreground hover:text-destructive">
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateLogicRule(idx, (r) => {
+                              const newConds = [...r.conditions]
+                              if (newConds.length > 1) {
+                                newConds.splice(cIdx, 1)
+                                return { ...r, conditions: newConds }
+                              }
+                              return r
+                            })
+                          }}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
-                    
-                    <button type="button" onClick={() => {
-                      updateLogicRule(idx, r => {
-                        return { ...r, conditions: [...r.conditions, { blockId: "", operator: "equals", value: "" }] }
-                      })
-                    }} className="ml-4 mt-1 self-start text-xs text-muted-foreground hover:text-foreground">
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateLogicRule(idx, (r) => {
+                          return {
+                            ...r,
+                            conditions: [
+                              ...r.conditions,
+                              { blockId: "", operator: "equals", value: "" },
+                            ],
+                          }
+                        })
+                      }}
+                      className="mt-1 ml-4 self-start text-xs text-muted-foreground hover:text-foreground"
+                    >
                       + Add condition
                     </button>
                   </div>
@@ -328,7 +457,9 @@ export default function FormEditorPage() {
       hydrateForm(nextForm)
       setError(null)
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Could not load form")
+      setError(
+        loadError instanceof Error ? loadError.message : "Could not load form"
+      )
     } finally {
       setLoading(false)
     }
@@ -370,14 +501,18 @@ export default function FormEditorPage() {
 
       if (incoming.type === "CURSOR_JOIN") {
         setPresence((current) => {
-          const withoutUser = current.filter((item) => item.userId !== incoming.user.userId)
+          const withoutUser = current.filter(
+            (item) => item.userId !== incoming.user.userId
+          )
           return [...withoutUser, incoming.user]
         })
         return
       }
 
       if (incoming.type === "CURSOR_LEAVE") {
-        setPresence((current) => current.filter((item) => item.userId !== incoming.userId))
+        setPresence((current) =>
+          current.filter((item) => item.userId !== incoming.userId)
+        )
         setCursors((current) => {
           const next = { ...current }
           delete next[incoming.userId]
@@ -412,7 +547,10 @@ export default function FormEditorPage() {
                 description === null || typeof description === "string"
                   ? description
                   : current.description,
-              is_published: typeof isPublished === "boolean" ? isPublished : current.is_published,
+              is_published:
+                typeof isPublished === "boolean"
+                  ? isPublished
+                  : current.is_published,
             }
             setNameDraft(next.name)
             setDescriptionDraft(next.description ?? "")
@@ -420,7 +558,10 @@ export default function FormEditorPage() {
             return next
           }
 
-          const nextSnapshot = applyFormEvent(current.schema_snapshot, incoming.formEvent)
+          const nextSnapshot = applyFormEvent(
+            current.schema_snapshot,
+            incoming.formEvent
+          )
           return {
             ...current,
             schema_snapshot: nextSnapshot,
@@ -466,7 +607,10 @@ export default function FormEditorPage() {
             description === null || typeof description === "string"
               ? description
               : current.description,
-          is_published: typeof isPublished === "boolean" ? isPublished : current.is_published,
+          is_published:
+            typeof isPublished === "boolean"
+              ? isPublished
+              : current.is_published,
         }
       }
 
@@ -497,23 +641,26 @@ export default function FormEditorPage() {
     [applyLocalEvent, formId, hydrateForm, sendWsMessage]
   )
 
-  const addBlock = React.useCallback(async (index?: number) => {
-    const block = defaultBlock()
-    await persistEvent({
-      event_type: "ADD_BLOCK",
-      payload: { block },
-    })
-
-    if (typeof index === "number" && form) {
-      const currentBlocks = form.schema_snapshot.blocks
-      const newOrder = currentBlocks.map(b => b.id)
-      newOrder.splice(index, 0, block.id)
+  const addBlock = React.useCallback(
+    async (index?: number) => {
+      const block = defaultBlock()
       await persistEvent({
-        event_type: "REORDER_BLOCKS",
-        payload: { order: newOrder }
+        event_type: "ADD_BLOCK",
+        payload: { block },
       })
-    }
-  }, [form, persistEvent])
+
+      if (typeof index === "number" && form) {
+        const currentBlocks = form.schema_snapshot.blocks
+        const newOrder = currentBlocks.map((b) => b.id)
+        newOrder.splice(index, 0, block.id)
+        await persistEvent({
+          event_type: "REORDER_BLOCKS",
+          payload: { order: newOrder },
+        })
+      }
+    },
+    [form, persistEvent]
+  )
 
   const removeBlock = React.useCallback(
     async (id: string) => {
@@ -525,25 +672,30 @@ export default function FormEditorPage() {
     [persistEvent]
   )
 
-  const updateBlockLocal = React.useCallback((id: string, updater: (block: FormBlock) => FormBlock) => {
-    setForm((current) => {
-      if (!current) {
-        return current
-      }
-      return {
-        ...current,
-        schema_snapshot: {
-          blocks: current.schema_snapshot.blocks.map((block) =>
-            block.id === id ? updater(block) : block
-          ),
-        },
-      }
-    })
-  }, [])
+  const updateBlockLocal = React.useCallback(
+    (id: string, updater: (block: FormBlock) => FormBlock) => {
+      setForm((current) => {
+        if (!current) {
+          return current
+        }
+        return {
+          ...current,
+          schema_snapshot: {
+            blocks: current.schema_snapshot.blocks.map((block) =>
+              block.id === id ? updater(block) : block
+            ),
+          },
+        }
+      })
+    },
+    []
+  )
 
   const persistBlock = React.useCallback(
     async (id: string) => {
-      const block = form?.schema_snapshot.blocks.find((candidate) => candidate.id === id)
+      const block = form?.schema_snapshot.blocks.find(
+        (candidate) => candidate.id === id
+      )
       if (!block) {
         return
       }
@@ -572,7 +724,11 @@ export default function FormEditorPage() {
     try {
       await persistEvent(eventPayload)
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Failed to save form metadata")
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to save form metadata"
+      )
     } finally {
       setSavingMeta(false)
     }
@@ -616,7 +772,11 @@ export default function FormEditorPage() {
     return (
       <div className="mx-auto max-w-4xl p-10">
         <p className="text-sm text-destructive">{error ?? "Form not found"}</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/dashboard")}>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => router.push("/dashboard")}
+        >
           Back to dashboard
         </Button>
       </div>
@@ -656,11 +816,23 @@ export default function FormEditorPage() {
           >
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Form metadata</p>
-                <p className="mt-1 text-sm text-muted-foreground">Changes sync to other editors in real time.</p>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Form metadata
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Changes sync to other editors in real time.
+                </p>
               </div>
-              <Button onClick={() => void saveMeta()} disabled={savingMeta} className="rounded-[8px]">
-                {savingMeta ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+              <Button
+                onClick={() => void saveMeta()}
+                disabled={savingMeta}
+                className="rounded-[8px]"
+              >
+                {savingMeta ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
                 Save details
               </Button>
             </div>
@@ -669,7 +841,7 @@ export default function FormEditorPage() {
               <input
                 value={nameDraft}
                 onChange={(event) => setNameDraft(event.target.value)}
-                className="h-11 rounded-[8px] border border-input bg-background px-3 text-sm outline-none transition focus:border-ring"
+                className="h-11 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
                 placeholder="Form name"
               />
               <label className="flex items-center gap-3 rounded-[8px] border border-input bg-background px-3 text-sm">
@@ -684,13 +856,17 @@ export default function FormEditorPage() {
             <textarea
               value={descriptionDraft}
               onChange={(event) => setDescriptionDraft(event.target.value)}
-              className="mt-3 min-h-24 w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm outline-none transition focus:border-ring"
+              className="mt-3 min-h-24 w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm transition outline-none focus:border-ring"
               placeholder="Description"
             />
 
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-lg font-medium">Blocks</h2>
-              <Button onClick={() => void addBlock()} variant="outline" className="rounded-[8px]">
+              <Button
+                onClick={() => void addBlock()}
+                variant="outline"
+                className="rounded-[8px]"
+              >
                 <FilePlus2 className="mr-2 h-4 w-4" />
                 Add block
               </Button>
@@ -738,19 +914,27 @@ export default function FormEditorPage() {
             </div>
             <div className="space-y-2">
               {presence.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No other active editors.</p>
+                <p className="text-sm text-muted-foreground">
+                  No other active editors.
+                </p>
               ) : (
                 presence.map((user) => (
-                  <div key={user.userId} className="flex items-center justify-between rounded-[8px] border border-border bg-background px-3 py-2">
+                  <div
+                    key={user.userId}
+                    className="flex items-center justify-between rounded-[8px] border border-border bg-background px-3 py-2"
+                  >
                     <span className="text-sm font-medium">{user.label}</span>
-                    <span className="text-xs text-muted-foreground">online</span>
+                    <span className="text-xs text-muted-foreground">
+                      online
+                    </span>
                   </div>
                 ))
               )}
             </div>
 
             <div className="mt-6 rounded-[10px] border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-              Changes are event-sourced. Block edits, metadata updates, and cursor movement sync across users in the same form.
+              Changes are event-sourced. Block edits, metadata updates, and
+              cursor movement sync across users in the same form.
             </div>
           </aside>
         </section>

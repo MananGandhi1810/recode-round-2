@@ -13,7 +13,8 @@ const fontMono = Geist_Mono({
 
 export const metadata = {
   title: "Fluxboard",
-  description: "A modern SaaS landing page with OTP auth and organization onboarding.",
+  description:
+    "A modern SaaS landing page with OTP auth and organization onboarding.",
 }
 
 export default function RootLayout({
@@ -25,7 +26,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={cn(
+        "antialiased",
+        fontMono.variable,
+        "font-sans",
+        geist.variable
+      )}
     >
       <body className="min-h-svh bg-background text-foreground">
         <ThemeProvider>{children}</ThemeProvider>

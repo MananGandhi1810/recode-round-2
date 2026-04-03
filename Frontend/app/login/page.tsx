@@ -2,7 +2,13 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRight, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react"
+import {
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  Mail,
+  ShieldCheck,
+} from "lucide-react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -48,10 +54,13 @@ export default function LoginPage() {
     setMessage("Verifying OTP...")
 
     try {
-      await apiFetch<{ access_token: string; user: AuthUser }>("/auth/verify-otp", {
-        method: "POST",
-        body: JSON.stringify({ email, otp, full_name: fullName || null }),
-      })
+      await apiFetch<{ access_token: string; user: AuthUser }>(
+        "/auth/verify-otp",
+        {
+          method: "POST",
+          body: JSON.stringify({ email, otp, full_name: fullName || null }),
+        }
+      )
       setMessage("Signed in securely.")
       router.push("/dashboard")
     } catch (error) {
@@ -66,7 +75,9 @@ export default function LoginPage() {
       <div className="relative mx-auto flex min-h-svh w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em] text-muted-foreground">Fluxboard</p>
+            <p className="text-xs tracking-[0.32em] text-muted-foreground uppercase">
+              Fluxboard
+            </p>
             <p className="mt-2 text-lg font-medium">Sign in to continue</p>
           </div>
           <ThemeToggle />
@@ -82,7 +93,8 @@ export default function LoginPage() {
               Get into the product, then create your organization.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
-              The login flow is intentionally short. Once you are in, you land on the organization setup screen where the SaaS onboarding begins.
+              The login flow is intentionally short. Once you are in, you land
+              on the organization setup screen where the SaaS onboarding begins.
             </p>
             <div className="mt-8 rounded-[1.75rem] border border-border/70 bg-card/80 p-5 backdrop-blur">
               <div className="flex items-center gap-3">
@@ -90,14 +102,18 @@ export default function LoginPage() {
                 <p className="font-medium">Session-based access</p>
               </div>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Email OTP is verified before you see any workspace setup. That keeps the public site clean and the product flow predictable.
+                Email OTP is verified before you see any workspace setup. That
+                keeps the public site clean and the product flow predictable.
               </p>
             </div>
           </div>
 
           <div className="rounded-[2rem] border border-border/70 bg-card/90 p-6 shadow-[0_25px_100px_-40px_rgba(0,0,0,0.45)] backdrop-blur">
             {step === "request" ? (
-              <form onSubmit={requestOtp} className="rounded-3xl border border-border/60 bg-background/75 p-5">
+              <form
+                onSubmit={requestOtp}
+                className="rounded-3xl border border-border/60 bg-background/75 p-5"
+              >
                 <div className="flex items-center gap-3 text-sm font-medium">
                   <Mail className="size-4 text-primary" />
                   Step 1 of 2 · Request OTP
@@ -107,7 +123,7 @@ export default function LoginPage() {
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     placeholder="Full name"
-                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm outline-none transition focus:border-ring"
+                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm transition outline-none focus:border-ring"
                     required
                   />
                   <input
@@ -115,22 +131,35 @@ export default function LoginPage() {
                     onChange={(event) => setEmail(event.target.value)}
                     type="email"
                     placeholder="Email address"
-                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm outline-none transition focus:border-ring"
+                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm transition outline-none focus:border-ring"
                     required
                   />
-                  <Button type="submit" disabled={loading} className="h-11 rounded-2xl">
-                    {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ArrowRight className="mr-2 size-4" />}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-11 rounded-2xl"
+                  >
+                    {loading ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="mr-2 size-4" />
+                    )}
                     Send OTP
                   </Button>
                 </div>
               </form>
             ) : (
-              <form onSubmit={verifyOtp} className="rounded-3xl border border-border/60 bg-background/75 p-5">
+              <form
+                onSubmit={verifyOtp}
+                className="rounded-3xl border border-border/60 bg-background/75 p-5"
+              >
                 <div className="flex items-center gap-3 text-sm font-medium">
                   <ShieldCheck className="size-4 text-primary" />
                   Step 2 of 2 · Verify OTP
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">We sent a code to {email}. Enter it below to continue.</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  We sent a code to {email}. Enter it below to continue.
+                </p>
                 <div className="mt-4 grid gap-3">
                   <input
                     value={otp}
@@ -138,10 +167,14 @@ export default function LoginPage() {
                     inputMode="numeric"
                     maxLength={6}
                     placeholder="6-digit code"
-                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm outline-none transition focus:border-ring"
+                    className="h-11 rounded-2xl border border-input bg-background px-4 text-sm transition outline-none focus:border-ring"
                     required
                   />
-                  <Button type="submit" disabled={loading} className="h-11 rounded-2xl">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-11 rounded-2xl"
+                  >
                     <CheckCircle2 className="mr-2 size-4" />
                     Verify and continue
                   </Button>
@@ -150,7 +183,9 @@ export default function LoginPage() {
             )}
 
             <div className="mt-5 rounded-3xl border border-border/60 bg-background/75 p-5">
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Status
+              </p>
               <p className="mt-2 text-base font-medium">{message}</p>
             </div>
           </div>

@@ -2,7 +2,17 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Search, Plus, Blocks, Loader2, ListFilter, ArrowDownWideNarrow, Grid3X3, List, FileText } from "lucide-react"
+import {
+  Search,
+  Plus,
+  Blocks,
+  Loader2,
+  ListFilter,
+  ArrowDownWideNarrow,
+  Grid3X3,
+  List,
+  FileText,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -24,14 +34,17 @@ export default function UserOrganizationsPage() {
   const [selectedOrganizationId, setSelectedOrganizationId] = React.useState("")
   const [organizationQuery, setOrganizationQuery] = React.useState("")
   const [formQuery, setFormQuery] = React.useState("")
-  const [formStatusFilter, setFormStatusFilter] = React.useState<FormStatusFilter>("all")
+  const [formStatusFilter, setFormStatusFilter] =
+    React.useState<FormStatusFilter>("all")
   const [formsView, setFormsView] = React.useState<"grid" | "list">("grid")
   const [showNewOrganization, setShowNewOrganization] = React.useState(false)
   const [newOrganizationName, setNewOrganizationName] = React.useState("")
   const [showNewForm, setShowNewForm] = React.useState(false)
   const [newFormName, setNewFormName] = React.useState("")
   const [newFormDescription, setNewFormDescription] = React.useState("")
-  const [formsByOrganization, setFormsByOrganization] = React.useState<Record<string, FormRecord[]>>({})
+  const [formsByOrganization, setFormsByOrganization] = React.useState<
+    Record<string, FormRecord[]>
+  >({})
   const [formsLoading, setFormsLoading] = React.useState(false)
   const [formsError, setFormsError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
@@ -61,7 +74,10 @@ export default function UserOrganizationsPage() {
     if (!q) {
       return organizations
     }
-    return organizations.filter((org) => org.name.toLowerCase().includes(q) || org.slug.toLowerCase().includes(q))
+    return organizations.filter(
+      (org) =>
+        org.name.toLowerCase().includes(q) || org.slug.toLowerCase().includes(q)
+    )
   }, [organizations, organizationQuery])
 
   React.useEffect(() => {
@@ -84,7 +100,9 @@ export default function UserOrganizationsPage() {
         }))
       })
       .catch((error) => {
-        setFormsError(error instanceof Error ? error.message : "Could not load forms")
+        setFormsError(
+          error instanceof Error ? error.message : "Could not load forms"
+        )
       })
       .finally(() => {
         setFormsLoading(false)
@@ -92,7 +110,8 @@ export default function UserOrganizationsPage() {
   }, [formsByOrganization, selectedOrganizationId])
 
   const selectedOrganization = React.useMemo(
-    () => organizations.find((org) => org.id === selectedOrganizationId) ?? null,
+    () =>
+      organizations.find((org) => org.id === selectedOrganizationId) ?? null,
     [organizations, selectedOrganizationId]
   )
 
@@ -103,7 +122,8 @@ export default function UserOrganizationsPage() {
     return list.filter((form) => {
       const queryOk = !q || form.name.toLowerCase().includes(q)
       const formStatus = form.is_published ? "published" : "draft"
-      const statusOk = formStatusFilter === "all" || formStatus === formStatusFilter
+      const statusOk =
+        formStatusFilter === "all" || formStatus === formStatusFilter
       return queryOk && statusOk
     })
   }, [formsByOrganization, selectedOrganizationId, formQuery, formStatusFilter])
@@ -135,23 +155,31 @@ export default function UserOrganizationsPage() {
     setSavingForm(true)
 
     try {
-      const form = await apiFetch<FormRecord>(`/forms/organization/${selectedOrganizationId}`, {
-        method: "POST",
-        body: JSON.stringify({
-          name: newFormName.trim(),
-          description: newFormDescription.trim() || null,
-        }),
-      })
+      const form = await apiFetch<FormRecord>(
+        `/forms/organization/${selectedOrganizationId}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: newFormName.trim(),
+            description: newFormDescription.trim() || null,
+          }),
+        }
+      )
 
       setFormsByOrganization((current) => ({
         ...current,
-        [selectedOrganizationId]: [form, ...(current[selectedOrganizationId] ?? [])],
+        [selectedOrganizationId]: [
+          form,
+          ...(current[selectedOrganizationId] ?? []),
+        ],
       }))
       setNewFormName("")
       setNewFormDescription("")
       setShowNewForm(false)
     } catch (error) {
-      setFormsError(error instanceof Error ? error.message : "Could not create form")
+      setFormsError(
+        error instanceof Error ? error.message : "Could not create form"
+      )
     } finally {
       setSavingForm(false)
     }
@@ -166,19 +194,21 @@ export default function UserOrganizationsPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background text-foreground font-sans">
+    <div className="flex min-h-screen w-full flex-col bg-background font-sans text-foreground">
       <main className="mx-auto mt-4 w-full max-w-350 flex-1 p-6 md:p-12">
         <section>
-          <h1 className="mb-8 text-[32px] font-medium tracking-tight">Your Organizations</h1>
+          <h1 className="mb-8 text-[32px] font-medium tracking-tight">
+            Your Organizations
+          </h1>
           <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
             <div className="relative w-full max-w-105">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={organizationQuery}
                 onChange={(event) => setOrganizationQuery(event.target.value)}
                 type="text"
                 placeholder="Search for an organization"
-                className="w-full rounded-[8px] border border-border bg-card py-2.5 pr-4 pl-10 text-[15px] placeholder:text-muted-foreground transition-colors focus:border-border focus:outline-none"
+                className="w-full rounded-[8px] border border-border bg-card py-2.5 pr-4 pl-10 text-[15px] transition-colors placeholder:text-muted-foreground focus:border-border focus:outline-none"
               />
             </div>
             <Button
@@ -191,16 +221,25 @@ export default function UserOrganizationsPage() {
           </div>
 
           {showNewOrganization && (
-            <form onSubmit={createOrganization} className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4 md:flex-row">
+            <form
+              onSubmit={createOrganization}
+              className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4 md:flex-row"
+            >
               <input
                 value={newOrganizationName}
                 onChange={(event) => setNewOrganizationName(event.target.value)}
                 placeholder="Organization name"
-                className="h-10 flex-1 rounded-[8px] border border-input bg-background px-3 text-sm outline-none transition focus:border-ring"
+                className="h-10 flex-1 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
                 required
               />
-              <Button type="submit" disabled={saving} className="h-10 rounded-[8px] px-4">
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              <Button
+                type="submit"
+                disabled={saving}
+                className="h-10 rounded-[8px] px-4"
+              >
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Create
               </Button>
             </form>
@@ -214,7 +253,9 @@ export default function UserOrganizationsPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {filteredOrganizations.length === 0 ? (
                 <div className="col-span-full rounded-[10px] border border-border bg-card py-12 text-center">
-                  <p className="text-muted-foreground">No organizations found.</p>
+                  <p className="text-muted-foreground">
+                    No organizations found.
+                  </p>
                 </div>
               ) : (
                 filteredOrganizations.map((org) => {
@@ -225,15 +266,21 @@ export default function UserOrganizationsPage() {
                       type="button"
                       onClick={() => setSelectedOrganizationId(org.id)}
                       className={`group relative flex items-center gap-4 overflow-hidden rounded-[10px] border p-4.5 text-left shadow-sm transition-colors ${
-                        active ? "border-primary/50 bg-accent" : "border-border/80 bg-card hover:bg-accent"
+                        active
+                          ? "border-primary/50 bg-accent"
+                          : "border-border/80 bg-card hover:bg-accent"
                       }`}
                     >
                       <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground group-hover:text-foreground">
                         <Blocks size={20} strokeWidth={1.5} />
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <h3 className="text-[15px] font-medium text-card-foreground">{org.name}</h3>
-                        <p className="text-[13px] text-muted-foreground">Free Plan · /{org.slug}</p>
+                        <h3 className="text-[15px] font-medium text-card-foreground">
+                          {org.name}
+                        </h3>
+                        <p className="text-[13px] text-muted-foreground">
+                          Free Plan · /{org.slug}
+                        </p>
                       </div>
                     </button>
                   )
@@ -263,19 +310,22 @@ export default function UserOrganizationsPage() {
           ) : (
             <>
               <div className="mb-4 text-sm text-muted-foreground">
-                Managing forms for <span className="font-medium text-foreground">{selectedOrganization.name}</span>
+                Managing forms for{" "}
+                <span className="font-medium text-foreground">
+                  {selectedOrganization.name}
+                </span>
               </div>
 
               <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="relative w-full min-w-70 max-w-105">
-                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <div className="relative w-full max-w-105 min-w-70">
+                    <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <input
                       value={formQuery}
                       onChange={(event) => setFormQuery(event.target.value)}
                       type="text"
                       placeholder="Search for a form"
-                      className="w-full rounded-[8px] border border-border bg-card py-2.5 pr-4 pl-10 text-[15px] placeholder:text-muted-foreground transition-colors focus:border-border focus:outline-none"
+                      className="w-full rounded-[8px] border border-border bg-card py-2.5 pr-4 pl-10 text-[15px] transition-colors placeholder:text-muted-foreground focus:border-border focus:outline-none"
                     />
                   </div>
 
@@ -283,7 +333,11 @@ export default function UserOrganizationsPage() {
                     <ListFilter className="h-4 w-4 text-muted-foreground" />
                     <select
                       value={formStatusFilter}
-                      onChange={(event) => setFormStatusFilter(event.target.value as "all" | "draft" | "published")}
+                      onChange={(event) =>
+                        setFormStatusFilter(
+                          event.target.value as "all" | "draft" | "published"
+                        )
+                      }
                       className="bg-transparent text-sm outline-none"
                     >
                       <option value="all">All status</option>
@@ -319,24 +373,35 @@ export default function UserOrganizationsPage() {
               </div>
 
               {showNewForm && (
-                <form onSubmit={createForm} className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4 md:flex-row">
+                <form
+                  onSubmit={createForm}
+                  className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4 md:flex-row"
+                >
                   <div className="flex flex-1 flex-col gap-3">
                     <input
                       value={newFormName}
                       onChange={(event) => setNewFormName(event.target.value)}
                       placeholder="Form name"
-                      className="h-10 w-full rounded-[8px] border border-input bg-background px-3 text-sm outline-none transition focus:border-ring"
+                      className="h-10 w-full rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
                       required
                     />
                     <input
                       value={newFormDescription}
-                      onChange={(event) => setNewFormDescription(event.target.value)}
+                      onChange={(event) =>
+                        setNewFormDescription(event.target.value)
+                      }
                       placeholder="Short description (optional)"
-                      className="h-10 w-full rounded-[8px] border border-input bg-background px-3 text-sm outline-none transition focus:border-ring"
+                      className="h-10 w-full rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
                     />
                   </div>
-                  <Button type="submit" disabled={savingForm} className="h-10 rounded-[8px] px-4">
-                    {savingForm ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  <Button
+                    type="submit"
+                    disabled={savingForm}
+                    className="h-10 rounded-[8px] px-4"
+                  >
+                    {savingForm ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     Create form
                   </Button>
                 </form>
@@ -361,20 +426,30 @@ export default function UserOrganizationsPage() {
                   {filteredForms.map((form) => (
                     <Link key={form.id} href={`/dashboard/forms/${form.id}`}>
                       <article className="rounded-[10px] border border-border/80 bg-card p-6 shadow-sm transition hover:bg-accent/60">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-[36px] leading-none">{form.name.slice(0, 1).toUpperCase()}</h3>
-                          <p className="mt-5 text-[36px] leading-tight font-medium tracking-tight">{form.name}</p>
-                          {form.description ? <p className="mt-2 text-sm text-muted-foreground">{form.description}</p> : null}
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-[36px] leading-none">
+                              {form.name.slice(0, 1).toUpperCase()}
+                            </h3>
+                            <p className="mt-5 text-[36px] leading-tight font-medium tracking-tight">
+                              {form.name}
+                            </p>
+                            {form.description ? (
+                              <p className="mt-2 text-sm text-muted-foreground">
+                                {form.description}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                      <div className="mt-6 flex items-center gap-3 text-[13px] text-muted-foreground">
-                        <span>Free</span>
-                        <span>•</span>
-                        <span>{form.is_published ? "published" : "draft"}</span>
-                        <span>•</span>
-                        <span>{formatUpdatedLabel(form.updated_at)}</span>
-                      </div>
+                        <div className="mt-6 flex items-center gap-3 text-[13px] text-muted-foreground">
+                          <span>Free</span>
+                          <span>•</span>
+                          <span>
+                            {form.is_published ? "published" : "draft"}
+                          </span>
+                          <span>•</span>
+                          <span>{formatUpdatedLabel(form.updated_at)}</span>
+                        </div>
                       </article>
                     </Link>
                   ))}
@@ -384,18 +459,23 @@ export default function UserOrganizationsPage() {
                   {filteredForms.map((form) => (
                     <Link key={form.id} href={`/dashboard/forms/${form.id}`}>
                       <article className="flex items-center justify-between rounded-[10px] border border-border/80 bg-card p-4 shadow-sm transition hover:bg-accent/60">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
-                          <FileText className="h-4 w-4" />
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{form.name}</p>
+                            {form.description ? (
+                              <p className="text-sm text-muted-foreground">
+                                {form.description}
+                              </p>
+                            ) : null}
+                            <p className="text-sm text-muted-foreground">
+                              Free · {form.is_published ? "published" : "draft"}{" "}
+                              · {formatUpdatedLabel(form.updated_at)}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{form.name}</p>
-                          {form.description ? <p className="text-sm text-muted-foreground">{form.description}</p> : null}
-                          <p className="text-sm text-muted-foreground">
-                            Free · {form.is_published ? "published" : "draft"} · {formatUpdatedLabel(form.updated_at)}
-                          </p>
-                        </div>
-                      </div>
                       </article>
                     </Link>
                   ))}
@@ -408,4 +488,3 @@ export default function UserOrganizationsPage() {
     </div>
   )
 }
-

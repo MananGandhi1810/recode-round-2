@@ -24,7 +24,11 @@ export function ThemeToggle() {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="gap-2 rounded-full"
     >
-      {isDark ? <SunMedium className="size-4" /> : <MoonStar className="size-4" />}
+      {isDark ? (
+        <SunMedium className="size-4" />
+      ) : (
+        <MoonStar className="size-4" />
+      )}
       {isDark ? "Light" : "Dark"}
     </Button>
   )
