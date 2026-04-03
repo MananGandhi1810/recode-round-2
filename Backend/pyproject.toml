@@ -1,7 +1,7 @@
 [project]
-name = "backend"
+name = "FormBar"
 version = "0.1.0"
-description = "FastAPI Backend for Workspace Auth"
+description = "FastAPI Backend for FormBar"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.104.1",

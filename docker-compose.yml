@@ -1,7 +1,12 @@
 services:
   backend:
-    build: ./Backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
     container_name: backend
+    volumes:
+      - ./Backend/src:/app/src
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     env_file:
@@ -11,21 +16,29 @@ services:
       - redis
       - mongodb
     networks:
-      - recode
+      - formbar
 
   frontend:
-    build: ./Frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
     container_name: frontend
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: pnpm dev
     ports:
       - "3000:3000"
     env_file:
       - .env
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
     networks:
-      - recode
+      - formbar
 
   postgres:
     image: postgres:alpine
@@ -34,13 +47,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: recode
+      POSTGRES_DB: formbar
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - recode
+      - formbar
 
   redis:
     image: redis:alpine
@@ -51,7 +64,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - recode
+      - formbar
 
   mongodb:
     image: mongo:latest
@@ -65,7 +78,7 @@ services:
     volumes:
       - mongodb_data:/data/db
     networks:
-      - recode
+      - formbar
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
@@ -77,7 +90,7 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
     networks:
-      - recode
+      - formbar
 
   rustfs:
     image: rustfs/rustfs:latest
@@ -93,10 +106,10 @@ services:
     volumes:
       - rustfs_data:/data
     networks:
-      - recode
+      - formbar
 
 networks:
-  recode:
+  formbar:
     driver: bridge
 
 volumes:

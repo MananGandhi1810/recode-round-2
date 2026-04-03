@@ -1,67 +1,57 @@
-# Workspace Auth Fullstack Project
+# FormBar
 
-This project is a modern fullstack application with a FastAPI backend and a Next.js frontend, managed with `uv` (Python) and `pnpm` (Node.js).
+FormBar is a modern, full-stack application for building and managing forms, featuring a FastAPI backend and a Next.js frontend.
 
-## 🚀 Tech Stack
+## Architecture
 
-- **Frontend:** Next.js 15, Tailwind CSS, TypeScript, pnpm
-- **Backend:** FastAPI, Python 3.13, uv
-- **Database:** PostgreSQL (with SQLAlchemy/asyncpg), MongoDB (with Motor)
-- **Cache:** Redis
-- **Analytics:** ClickHouse
-- **Storage:** RustFS (S3-compatible)
+- **Frontend**: Next.js 16 with React 19, TypeScript, and Tailwind CSS.
+- **Backend**: FastAPI (Python 3.13) with SQLAlchemy (PostgreSQL), Redis (OTP/Caching), and Motor (MongoDB).
+- **Infrastructure**: Docker Compose manages multiple services including PostgreSQL, Redis, MongoDB, ClickHouse, and RustFS.
 
-## 📁 Project Structure
+## Local Development
 
-```text
-.
-├── Backend/          # FastAPI Backend (Python 3.13 + uv)
-│   ├── src/          # Source code
-│   │   ├── app/      # Core application logic
-│   │   └── main.py   # Entry point
-│   ├── Dockerfile
-│   └── pyproject.toml
-├── Frontend/         # Next.js Frontend (Node.js 22 + pnpm)
-│   ├── app/          # Next.js App Router
-│   ├── components/   # UI Components
-│   └── Dockerfile
-├── docker-compose.yml # Docker infrastructure
-├── .env.example       # Environment variables template
-└── README.md          # Documentation
-```
+### Prerequisites
 
-## 🛠️ Local Development
+- Docker and Docker Compose
+- Node.js (for local linting/types)
+- Python 3.13 (for local development)
 
-### 1. Requirements
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [pnpm](https://pnpm.io/installation)
-- [uv](https://github.com/astral-sh/uv)
-
-### 2. Setup
+### Getting Started
 
 1. Clone the repository.
-2. Configure environment variables:
+2. Create a `.env` file from `.env.example`:
    ```bash
    cp .env.example .env
    ```
-3. Run the services using Docker:
+3. Start the services using Docker Compose:
    ```bash
    docker compose up --build
    ```
 
-## 🐳 Docker Services
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
 
-The following services are configured in `docker-compose.yml`:
+### Hot-Reloading
 
-- **backend**: FastAPI application on port 8000.
-- **frontend**: Next.js application on port 3000.
-- **postgres**: PostgreSQL database for core data.
-- **redis**: Redis for caching and session management.
-- **mongodb**: MongoDB for flexible form data storage.
-- **clickhouse**: ClickHouse for high-performance analytics.
-- **rustfs**: RustFS for S3-compatible object storage.
+Both the frontend and backend are configured for hot-reloading:
+- **Backend**: Source code is mounted from `./Backend/src`. Changes trigger a Uvicorn reload.
+- **Frontend**: The entire `./Frontend` directory is mounted. Next.js Turbopack handles fast refreshes.
 
-## 📄 License
+## Service Ports
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+- Frontend: 3000
+- Backend API: 8000
+- PostgreSQL: 5432
+- Redis: 6379
+- MongoDB: 27017
+- ClickHouse: 8123, 9000
+- RustFS: 9001 (Console), 9002 (API)
+
+## Backend Structure
+
+- `app/core`: Configuration, database engines, and security.
+- `app/models`: SQLAlchemy and Pydantic models.
+- `app/routers`: FastAPI route definitions.
+- `app/services`: Business logic and third-party integrations.
+- `app/schemas`: Data validation schemas.
