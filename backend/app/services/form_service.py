@@ -63,6 +63,9 @@ class FormService:
             new_order = payload.get("order", [])
             order_map = {bid: i for i, bid in enumerate(new_order)}
             blocks.sort(key=lambda b: order_map.get(b.get("id"), 9999))
+        elif etype == "UPDATE_FORM_META":
+            # Metadata is persisted on the Form row, not in the snapshot.
+            pass
             
         return {"blocks": blocks}
 
@@ -94,9 +97,21 @@ class FormService:
         db.add(new_event)
 
         # Update Form Snapshot
-        snapshot = dict(form.schema_snapshot)
-        new_snapshot = FormService._apply_event_to_snapshot(snapshot, event_in)
-        form.schema_snapshot = new_snapshot
+        if event_in.event_type == "UPDATE_FORM_META":
+            name = event_in.payload.get("name")
+            description = event_in.payload.get("description")
+            is_published = event_in.payload.get("is_published")
+
+            if isinstance(name, str):
+                form.name = name.strip() or form.name
+            if description is None or isinstance(description, str):
+                form.description = description
+            if isinstance(is_published, bool):
+                form.is_published = is_published
+        else:
+            snapshot = dict(form.schema_snapshot)
+            new_snapshot = FormService._apply_event_to_snapshot(snapshot, event_in)
+            form.schema_snapshot = new_snapshot
         
         await db.commit()
         await db.refresh(form)

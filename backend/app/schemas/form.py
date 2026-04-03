@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any, Union
+import uuid
+from typing import Any, Dict, List, Optional
 from datetime import datetime
+
+from pydantic import BaseModel, Field
 
 # --- Block Definitions --- #
 
@@ -48,8 +50,8 @@ class FormCreate(BaseModel):
     description: Optional[str] = None
 
 class FormResponse(BaseModel):
-    id: str
-    organization_id: str
+    id: uuid.UUID
+    organization_id: uuid.UUID
     name: str
     description: Optional[str] = None
     is_published: bool
