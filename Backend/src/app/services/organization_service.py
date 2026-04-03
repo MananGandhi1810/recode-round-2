@@ -12,13 +12,17 @@ def slugify(name: str) -> str:
     return slug or "organization"
 
 
-async def create_organization(session: AsyncSession, user: User, name: str) -> Organization:
+async def create_organization(
+    session: AsyncSession, user: User, name: str
+) -> Organization:
     base_slug = slugify(name)
     slug = base_slug
     suffix = 1
 
     while True:
-        result = await session.execute(select(Organization).where(Organization.slug == slug))
+        result = await session.execute(
+            select(Organization).where(Organization.slug == slug)
+        )
         if result.scalar_one_or_none() is None:
             break
         suffix += 1
@@ -27,17 +31,25 @@ async def create_organization(session: AsyncSession, user: User, name: str) -> O
     organization = Organization(name=name, slug=slug, created_by_id=user.id)
     session.add(organization)
     await session.flush()
-    session.add(OrganizationMember(organization_id=organization.id, user_id=user.id, role="owner"))
+    session.add(
+        OrganizationMember(
+            organization_id=organization.id, user_id=user.id, role="owner"
+        )
+    )
     await session.commit()
     await session.refresh(organization)
     return organization
 
 
-async def require_owner(session: AsyncSession, organization_id: str, user_id: str) -> Organization:
+async def require_owner(
+    session: AsyncSession, organization_id: str, user_id: str
+) -> Organization:
     result = await session.execute(
         select(Organization, OrganizationMember)
         .join(OrganizationMember, OrganizationMember.organization_id == Organization.id)
-        .where(Organization.id == organization_id, OrganizationMember.user_id == user_id)
+        .where(
+            Organization.id == organization_id, OrganizationMember.user_id == user_id
+        )
     )
     row = result.first()
     if row is None:
@@ -49,7 +61,9 @@ async def require_owner(session: AsyncSession, organization_id: str, user_id: st
     return organization
 
 
-async def add_member(session: AsyncSession, organization: Organization, user: User, role: str) -> OrganizationMember:
+async def add_member(
+    session: AsyncSession, organization: Organization, user: User, role: str
+) -> OrganizationMember:
     result = await session.execute(
         select(OrganizationMember).where(
             OrganizationMember.organization_id == organization.id,
@@ -58,7 +72,9 @@ async def add_member(session: AsyncSession, organization: Organization, user: Us
     )
     member = result.scalar_one_or_none()
     if member is None:
-        member = OrganizationMember(organization_id=organization.id, user_id=user.id, role=role)
+        member = OrganizationMember(
+            organization_id=organization.id, user_id=user.id, role=role
+        )
         session.add(member)
     else:
         member.role = role

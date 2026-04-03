@@ -12,18 +12,27 @@ async def get_current_user(
     session: AsyncSession = Depends(get_db),
     access_token: str | None = Cookie(default=None),
 ) -> User:
-    token = access_token or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    token = (
+        access_token
+        or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+    )
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
 
     try:
         payload = decode_token(token)
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session"
+        ) from exc
 
     user_id = payload.get("sub")
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
     return user

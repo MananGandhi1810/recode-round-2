@@ -6,14 +6,17 @@ from sqlalchemy import select, func
 from app.models.form import Form, FormEvent
 from app.schemas.form import FormCreate, FormUpdate, FormEventCreate
 
+
 class FormService:
     @staticmethod
-    async def create_form(db: AsyncSession, org_id: uuid.UUID, form_in: FormCreate) -> Form:
+    async def create_form(
+        db: AsyncSession, org_id: uuid.UUID, form_in: FormCreate
+    ) -> Form:
         new_form = Form(
             organization_id=org_id,
             name=form_in.name,
             description=form_in.description,
-            schema_snapshot={"blocks": []} # initial empty schema
+            schema_snapshot={"blocks": []},  # initial empty schema
         )
         db.add(new_form)
         await db.commit()
@@ -25,15 +28,21 @@ class FormService:
         query = select(Form).where(Form.id == form_id)
         result = await db.execute(query)
         return result.scalar_one_or_none()
-        
+
     @staticmethod
     async def get_org_forms(db: AsyncSession, org_id: uuid.UUID) -> List[Form]:
-        query = select(Form).where(Form.organization_id == org_id).order_by(Form.updated_at.desc())
+        query = (
+            select(Form)
+            .where(Form.organization_id == org_id)
+            .order_by(Form.updated_at.desc())
+        )
         result = await db.execute(query)
         return list(result.scalars().all())
 
     @staticmethod
-    def _apply_event_to_snapshot(snapshot: Dict[str, Any], event: FormEventCreate) -> Dict[str, Any]:
+    def _apply_event_to_snapshot(
+        snapshot: Dict[str, Any], event: FormEventCreate
+    ) -> Dict[str, Any]:
         """
         Pure function to apply an event to a snapshot to compute the next state.
         This enables Event Sourcing and rebuilding state from history if necessary.
@@ -42,7 +51,7 @@ class FormService:
         blocks = snapshot.get("blocks", []).copy()
         etype = event.event_type
         payload = event.payload
-        
+
         if etype == "ADD_BLOCK":
             # payload: {"block": {...}}
             if "block" in payload:
@@ -66,22 +75,24 @@ class FormService:
         elif etype == "UPDATE_FORM_META":
             # Metadata is persisted on the Form row, not in the snapshot.
             pass
-            
+
         return {"blocks": blocks}
 
     @staticmethod
     async def process_event(
-        db: AsyncSession, 
-        form_id: uuid.UUID, 
-        user_id: Optional[uuid.UUID], 
-        event_in: FormEventCreate
+        db: AsyncSession,
+        form_id: uuid.UUID,
+        user_id: Optional[uuid.UUID],
+        event_in: FormEventCreate,
     ) -> Form:
         form = await FormService.get_form(db, form_id)
         if not form:
             raise ValueError("Form not found")
 
         # Get latest version number
-        version_query = select(func.max(FormEvent.version)).where(FormEvent.form_id == form_id)
+        version_query = select(func.max(FormEvent.version)).where(
+            FormEvent.form_id == form_id
+        )
         version_result = await db.execute(version_query)
         max_version = version_result.scalar_one_or_none() or 0
         new_version = max_version + 1
@@ -92,7 +103,7 @@ class FormService:
             user_id=user_id,
             version=new_version,
             event_type=event_in.event_type,
-            payload=event_in.payload
+            payload=event_in.payload,
         )
         db.add(new_event)
 
@@ -112,7 +123,7 @@ class FormService:
             snapshot = dict(form.schema_snapshot)
             new_snapshot = FormService._apply_event_to_snapshot(snapshot, event_in)
             form.schema_snapshot = new_snapshot
-        
+
         await db.commit()
         await db.refresh(form)
         return form

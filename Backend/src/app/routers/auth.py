@@ -16,7 +16,9 @@ async def request_sign_in_code(payload: OTPRequest) -> dict[str, str]:
     try:
         await request_otp(payload.email)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)
+        ) from exc
 
     return {"message": "OTP sent"}
 
@@ -28,9 +30,13 @@ async def verify_sign_in_code(
     session: AsyncSession = Depends(get_db),
 ) -> AuthResponse:
     try:
-        token, user = await verify_otp(session, payload.email, payload.otp, payload.full_name)
+        token, user = await verify_otp(
+            session, payload.email, payload.otp, payload.full_name
+        )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
     response.set_cookie(
         key="access_token",
@@ -52,4 +58,8 @@ def logout(response: Response) -> dict[str, str]:
 
 @router.get("/me", response_model=AuthUser)
 async def me(current_user: User = Depends(get_current_user)) -> AuthUser:
-    return AuthUser(id=str(current_user.id), email=current_user.email, full_name=current_user.full_name)
+    return AuthUser(
+        id=str(current_user.id),
+        email=current_user.email,
+        full_name=current_user.full_name,
+    )

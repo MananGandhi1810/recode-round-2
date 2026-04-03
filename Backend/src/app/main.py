@@ -20,7 +20,9 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(organizations_router, prefix="/organizations", tags=["organizations"])
+app.include_router(
+    organizations_router, prefix="/organizations", tags=["organizations"]
+)
 app.include_router(forms_router, prefix="/forms", tags=["forms"])
 
 

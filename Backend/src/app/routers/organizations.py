@@ -6,14 +6,24 @@ from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.models.organization import Organization, OrganizationMember
 from app.models.user import User
-from app.schemas.organization import OrganizationCreate, OrganizationMemberCreate, OrganizationResponse
-from app.services.organization_service import add_member, create_organization, require_owner
+from app.schemas.organization import (
+    OrganizationCreate,
+    OrganizationMemberCreate,
+    OrganizationResponse,
+)
+from app.services.organization_service import (
+    add_member,
+    create_organization,
+    require_owner,
+)
 
 router = APIRouter()
 
 
 @router.get("", response_model=list[OrganizationResponse])
-async def list_organizations(session: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)) -> list[OrganizationResponse]:
+async def list_organizations(
+    session: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)
+) -> list[OrganizationResponse]:
     result = await session.execute(
         select(Organization)
         .join(OrganizationMember, OrganizationMember.organization_id == Organization.id)
@@ -57,12 +67,18 @@ async def add_org_member(
     try:
         organization = await require_owner(session, organization_id, str(user.id))
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
 
-    user_result = await session.execute(select(User).where(User.email == payload.email.strip().lower()))
+    user_result = await session.execute(
+        select(User).where(User.email == payload.email.strip().lower())
+    )
     target_user = user_result.scalar_one_or_none()
     if target_user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     member = await add_member(session, organization, target_user, payload.role)
     return {"id": str(member.id), "role": member.role}

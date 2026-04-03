@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   backend:
     build: ./Backend
-    container_name: workspace_backend
+    container_name: backend
     ports:
       - "8000:8000"
     env_file:
@@ -13,11 +11,11 @@ services:
       - redis
       - mongodb
     networks:
-      - workspace_net
+      - recode
 
   frontend:
     build: ./Frontend
-    container_name: workspace_frontend
+    container_name: frontend
     ports:
       - "3000:3000"
     env_file:
@@ -27,12 +25,12 @@ services:
     depends_on:
       - backend
     networks:
-      - workspace_net
+      - recode
 
   postgres:
-    image: postgres:15-alpine
-    container_name: workspace_postgres
-    restart: always
+    image: postgres:alpine
+    container_name: postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -42,23 +40,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - workspace_net
+      - recode
 
   redis:
-    image: redis:7-alpine
-    container_name: workspace_redis
-    restart: always
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - workspace_net
+      - recode
 
   mongodb:
-    image: mongo:6
-    container_name: workspace_mongodb
-    restart: always
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
@@ -67,24 +65,24 @@ services:
     volumes:
       - mongodb_data:/data/db
     networks:
-      - workspace_net
+      - recode
 
   clickhouse:
     image: clickhouse/clickhouse-server:latest
-    container_name: workspace_clickhouse
-    restart: always
+    container_name: clickhouse
+    restart: unless-stopped
     ports:
       - "8123:8123"
       - "9000:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
     networks:
-      - workspace_net
+      - recode
 
   rustfs:
     image: rustfs/rustfs:latest
-    container_name: workspace_rustfs
-    restart: always
+    container_name: rustfs
+    restart: unless-stopped
     environment:
       RUSTFS_ACCESS_KEY: rustfsadmin
       RUSTFS_SECRET_KEY: rustfsadmin
@@ -95,10 +93,10 @@ services:
     volumes:
       - rustfs_data:/data
     networks:
-      - workspace_net
+      - recode
 
 networks:
-  workspace_net:
+  recode:
     driver: bridge
 
 volumes:

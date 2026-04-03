@@ -11,18 +11,32 @@ class Organization(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    created_by_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
-    forms = relationship("Form", back_populates="organization", cascade="all, delete-orphan")
+    slug: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
+    created_by_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    members = relationship(
+        "OrganizationMember",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+    )
+    forms = relationship(
+        "Form", back_populates="organization", cascade="all, delete-orphan"
+    )
 
 
 class OrganizationMember(Base):
     __tablename__ = "organization_members"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(32), default="member", nullable=False)
 
     organization = relationship("Organization", back_populates="members")

@@ -5,7 +5,11 @@ from app.core.security import create_access_token, normalize_email
 from app.models.user import User
 from app.schemas.auth import AuthUser
 from app.services.email_service import send_otp_email
-from app.services.otp_service import clear_stored_otp, create_and_store_otp, verify_stored_otp
+from app.services.otp_service import (
+    clear_stored_otp,
+    create_and_store_otp,
+    verify_stored_otp,
+)
 
 
 async def request_otp(email: str) -> None:
@@ -13,7 +17,9 @@ async def request_otp(email: str) -> None:
     send_otp_email(normalize_email(email), otp)
 
 
-async def verify_otp(session: AsyncSession, email: str, otp: str, full_name: str | None = None) -> tuple[str, AuthUser]:
+async def verify_otp(
+    session: AsyncSession, email: str, otp: str, full_name: str | None = None
+) -> tuple[str, AuthUser]:
     normalized_email = normalize_email(email)
     if not verify_stored_otp(normalized_email, otp):
         raise ValueError("Invalid or expired OTP")
