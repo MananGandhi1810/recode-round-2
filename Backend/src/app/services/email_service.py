@@ -4,6 +4,7 @@ from app.core.config import settings
 
 
 def send_otp_email(email: str, otp: str) -> None:
+    print(f"OTP for {email}: {otp}", flush=True)
     if not settings.resend_api_key:
         raise RuntimeError("RESEND_API_KEY is required")
     if not settings.resend_sender_email or not settings.resend_sender_name:

@@ -4,26 +4,20 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.database import Base, engine
+from app.core.database import connect_to_db, close_db_connection
 from app.core.mongodb import connect_to_mongo, close_mongo_connection
-from app.models import organization, user  # noqa: F401
 from app.routers.auth import router as auth_router
 from app.routers.forms import router as forms_router
 from app.routers.health import router as health_router
 from app.routers.organizations import router as organizations_router
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    # Startup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await connect_to_db()
     await connect_to_mongo()
     yield
-    # Shutdown
     await close_mongo_connection()
-    await engine.dispose()
-
+    await close_db_connection()
 
 app = FastAPI(title="FormBar API", lifespan=lifespan)
 
@@ -37,7 +31,5 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(
-    organizations_router, prefix="/organizations", tags=["organizations"]
-)
+app.include_router(organizations_router, prefix="/organizations", tags=["organizations"])
 app.include_router(forms_router, prefix="/forms", tags=["forms"])

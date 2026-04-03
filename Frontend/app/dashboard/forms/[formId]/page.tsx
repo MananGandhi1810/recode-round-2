@@ -15,7 +15,27 @@ import {
   Plus,
   Settings2,
   Component,
+  List,
 } from "lucide-react"
+
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 import { Button } from "@/components/ui/button"
 import { apiFetch } from "@/lib/api"
@@ -70,6 +90,32 @@ function defaultBlock(): FormBlock {
   }
 }
 
+function DraggableSidebarItem({
+  type,
+  label,
+  icon: Icon,
+}: {
+  type: string
+  label: string
+  icon: any
+}) {
+  const { attributes, listeners, setNodeRef } = useSortable({
+    id: `new-${type}`,
+    data: { isNew: true, type, label },
+  })
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="flex cursor-grab items-center gap-2 rounded-md border border-border bg-card p-3 shadow-sm hover:border-primary"
+    >
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <span className="text-sm font-medium">{label}</span>
+    </div>
+  )
+}
+
 function BlockItem({
   block,
   allBlocks,
@@ -85,6 +131,21 @@ function BlockItem({
   onBlur: (id: string) => void
   onRemove: (id: string) => void
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   const [showLogic, setShowLogic] = React.useState(false)
 
   const handleLabelKeyDown = (
@@ -128,15 +189,12 @@ function BlockItem({
     onBlur(block.id)
   }
 
-  const TypeIcon =
-    block.type === "h1" || block.type === "h2"
-      ? "H"
-      : block.type === "paragraph"
-        ? "P"
-        : "T"
-
   return (
-    <div className="group relative -ml-12 flex items-start py-1">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group relative -ml-12 z-10 flex items-start bg-background py-1"
+    >
       <div className="flex w-12 items-center justify-end pt-1 pr-2 opacity-0 transition-opacity group-hover:opacity-100">
         <button
           type="button"
@@ -149,6 +207,8 @@ function BlockItem({
         </button>
         <button
           type="button"
+          {...attributes}
+          {...listeners}
           className="cursor-grab rounded-sm p-1 text-muted-foreground hover:bg-muted"
         >
           <GripVertical className="h-4 w-4" />
@@ -170,19 +230,21 @@ function BlockItem({
             <option value="paragraph">Paragraph</option>
             <option value="short_text">Short Text</option>
             <option value="long_text">Long Text</option>
+            <option value="checkbox">Checkbox Question</option>
+            <option value="multiple_choice">Multiple Choice</option>
           </select>
           <div className="flex-1" />
           <button
             type="button"
             onClick={() => setShowLogic(!showLogic)}
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-muted hover:text-foreground group-hover:opacity-100"
           >
             <Settings2 className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => onRemove(block.id)}
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -200,15 +262,15 @@ function BlockItem({
               block.type.startsWith("h")
                 ? "Heading..."
                 : block.type === "paragraph"
-                  ? "Type something..."
-                  : "Question..."
+                ? "Type something..."
+                : "Question..."
             }
             className={`w-full border-0 bg-transparent px-0 py-1 outline-none placeholder:text-muted-foreground/50 focus:ring-0 ${
               block.type === "h1"
                 ? "text-3xl font-bold"
                 : block.type === "h2"
-                  ? "text-xl font-bold"
-                  : "text-base"
+                ? "text-xl font-bold"
+                : "text-base"
             }`}
           />
         </div>
@@ -234,6 +296,41 @@ function BlockItem({
                 }
               />
             )}
+          </div>
+        )}
+
+        {(block.type === "checkbox" || block.type === "multiple_choice") && (
+          <div className="mt-2 space-y-2">
+            {(block.config.options || [{ label: "Option 1", value: "opt1" }]).map((opt, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className={`h-4 w-4 border border-input opacity-50 ${block.type === 'checkbox' ? 'rounded-sm' : 'rounded-full'}`}></div>
+                <input
+                  value={opt.label}
+                  onChange={(e) => {
+                    onChange(block.id, (b) => {
+                      const newOpts = [...(b.config.options || [])]
+                      newOpts[i] = { label: e.target.value, value: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') }
+                      return { ...b, config: { ...b.config, options: newOpts } }
+                    })
+                  }}
+                  onBlur={() => onBlur(block.id)}
+                  className="bg-transparent border-0 outline-none text-sm w-full opacity-80"
+                  placeholder="Option label"
+                />
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                onChange(block.id, (b) => {
+                  const newOpts = [...(b.config.options || []), { label: `Option ${(b.config.options?.length || 0) + 1}`, value: `opt${(b.config.options?.length || 0) + 1}` }]
+                  return { ...b, config: { ...b.config, options: newOpts } }
+                })
+                onBlur(block.id)
+              }}
+              className="text-xs text-primary hover:underline ml-6"
+            >
+              + Add option
+            </button>
           </div>
         )}
 
@@ -443,6 +540,9 @@ export default function FormEditorPage() {
   const [savingMeta, setSavingMeta] = React.useState(false)
 
   const blocks = form?.schema_snapshot.blocks ?? []
+
+  const sensors = useSensors(useSensor(PointerSensor))
+  const [activeId, setActiveId] = React.useState<string | null>(null)
 
   const hydrateForm = React.useCallback((nextForm: FormRecord) => {
     setForm(nextForm)
@@ -760,6 +860,59 @@ export default function FormEditorPage() {
     [sendWsMessage, socketConnected]
   )
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null)
+    const { active, over } = event
+    if (!over) return
+
+    if (String(active.id).startsWith("new-")) {
+      const type = active.data.current?.type
+      if (type) {
+        const block = defaultBlock()
+        block.type = type
+
+        if (type === "checkbox" || type === "multiple_choice") {
+          block.config.options = [{ label: "Option 1", value: "opt1" }]
+        }
+
+        await persistEvent({
+          event_type: "ADD_BLOCK",
+          payload: { block },
+        })
+
+        if (form && over.id !== "canvas") {
+          const currentBlocks = [...form.schema_snapshot.blocks, block]
+          const overIndex = currentBlocks.findIndex((b) => b.id === over.id)
+          const newOrder = currentBlocks.map((b) => b.id)
+          const moved = arrayMove(newOrder, newOrder.length - 1, overIndex)
+          await persistEvent({
+            event_type: "REORDER_BLOCKS",
+            payload: { order: moved },
+          })
+        }
+      }
+      return
+    }
+
+    if (active.id !== over.id && form) {
+      const currentBlocks = form.schema_snapshot.blocks
+      const oldIndex = currentBlocks.findIndex((b) => b.id === active.id)
+      const newIndex = currentBlocks.findIndex((b) => b.id === over.id)
+
+      const newOrder = currentBlocks.map((b) => b.id)
+      const moved = arrayMove(newOrder, oldIndex, newIndex)
+
+      await persistEvent({
+        event_type: "REORDER_BLOCKS",
+        payload: { order: moved },
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -808,136 +961,180 @@ export default function FormEditorPage() {
           </div>
         ) : null}
 
-        <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-          <div
-            ref={canvasRef}
-            onMouseMove={pushCursor}
-            className="relative rounded-[12px] border border-border bg-card p-5 shadow-sm"
-          >
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-              <div>
-                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
-                  Form metadata
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Changes sync to other editors in real time.
-                </p>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+            <div
+              ref={canvasRef}
+              onMouseMove={pushCursor}
+              className="relative rounded-[12px] border border-border bg-card p-5 shadow-sm"
+            >
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                <div>
+                  <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                    Form metadata
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Changes sync to other editors in real time.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => void saveMeta()}
+                  disabled={savingMeta}
+                  className="rounded-[8px]"
+                >
+                  {savingMeta ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Save details
+                </Button>
               </div>
-              <Button
-                onClick={() => void saveMeta()}
-                disabled={savingMeta}
-                className="rounded-[8px]"
-              >
-                {savingMeta ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="mr-2 h-4 w-4" />
-                )}
-                Save details
-              </Button>
-            </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
-              <input
-                value={nameDraft}
-                onChange={(event) => setNameDraft(event.target.value)}
-                className="h-11 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
-                placeholder="Form name"
-              />
-              <label className="flex items-center gap-3 rounded-[8px] border border-input bg-background px-3 text-sm">
+              <div className="grid gap-3 md:grid-cols-2">
                 <input
-                  type="checkbox"
-                  checked={publishedDraft}
-                  onChange={(event) => setPublishedDraft(event.target.checked)}
+                  value={nameDraft}
+                  onChange={(event) => setNameDraft(event.target.value)}
+                  className="h-11 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
+                  placeholder="Form name"
                 />
-                Published
-              </label>
-            </div>
-            <textarea
-              value={descriptionDraft}
-              onChange={(event) => setDescriptionDraft(event.target.value)}
-              className="mt-3 min-h-24 w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm transition outline-none focus:border-ring"
-              placeholder="Description"
-            />
-
-            <div className="mt-8 flex items-center justify-between">
-              <h2 className="text-lg font-medium">Blocks</h2>
-              <Button
-                onClick={() => void addBlock()}
-                variant="outline"
-                className="rounded-[8px]"
-              >
-                <FilePlus2 className="mr-2 h-4 w-4" />
-                Add block
-              </Button>
-            </div>
-
-            <div className="mt-4 space-y-3 pb-8">
-              {blocks.length === 0 ? (
-                <div className="rounded-[10px] border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-                  No blocks yet. Add your first question block.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {blocks.map((block) => (
-                    <BlockItem
-                      key={block.id}
-                      block={block}
-                      allBlocks={blocks}
-                      addBlockBase={(idx) => void addBlock(idx)}
-                      onChange={updateBlockLocal}
-                      onBlur={(id) => void persistBlock(id)}
-                      onRemove={(id) => void removeBlock(id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {Object.values(cursors).map((cursor) => (
-              <div
-                key={cursor.userId}
-                className="pointer-events-none absolute"
-                style={{ left: `${cursor.x}px`, top: `${cursor.y}px` }}
-              >
-                <div className="-translate-x-1/2 -translate-y-full rounded-[6px] bg-primary px-2 py-1 text-xs text-primary-foreground shadow">
-                  {cursor.label}
-                </div>
+                <label className="flex items-center gap-3 rounded-[8px] border border-input bg-background px-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={publishedDraft}
+                    onChange={(event) =>
+                      setPublishedDraft(event.target.checked)
+                    }
+                  />
+                  Published
+                </label>
               </div>
-            ))}
-          </div>
+              <textarea
+                value={descriptionDraft}
+                onChange={(event) => setDescriptionDraft(event.target.value)}
+                className="mt-3 min-h-24 w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm transition outline-none focus:border-ring"
+                placeholder="Description"
+              />
 
-          <aside className="rounded-[12px] border border-border bg-card p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-medium">Live collaborators</h3>
-            </div>
-            <div className="space-y-2">
-              {presence.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No other active editors.
-                </p>
-              ) : (
-                presence.map((user) => (
-                  <div
-                    key={user.userId}
-                    className="flex items-center justify-between rounded-[8px] border border-border bg-background px-3 py-2"
-                  >
-                    <span className="text-sm font-medium">{user.label}</span>
-                    <span className="text-xs text-muted-foreground">
-                      online
-                    </span>
+              <div className="mt-8 flex items-center justify-between">
+                <h2 className="text-lg font-medium">Blocks</h2>
+                <Button
+                  onClick={() => void addBlock()}
+                  variant="outline"
+                  className="rounded-[8px]"
+                >
+                  <FilePlus2 className="mr-2 h-4 w-4" />
+                  Add block
+                </Button>
+              </div>
+
+              <div className="mt-4 space-y-3 pb-8" id="canvas">
+                <SortableContext
+                  items={blocks.map((b) => b.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {blocks.length === 0 ? (
+                    <div className="rounded-[10px] border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
+                      Drag and drop blocks here.
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[100px] flex-col gap-1">
+                      {blocks.map((block) => (
+                        <BlockItem
+                          key={block.id}
+                          block={block}
+                          allBlocks={blocks}
+                          addBlockBase={(idx) => void addBlock(idx)}
+                          onChange={updateBlockLocal}
+                          onBlur={(id) => void persistBlock(id)}
+                          onRemove={(id) => void removeBlock(id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </SortableContext>
+              </div>
+
+              {Object.values(cursors).map((cursor) => (
+                <div
+                  key={cursor.userId}
+                  className="pointer-events-none absolute"
+                  style={{ left: `${cursor.x}px`, top: `${cursor.y}px` }}
+                >
+                  <div className="-translate-x-1/2 -translate-y-full rounded-[6px] bg-primary px-2 py-1 text-xs text-primary-foreground shadow">
+                    {cursor.label}
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
 
-            <div className="mt-6 rounded-[10px] border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-              Changes are event-sourced. Block edits, metadata updates, and
-              cursor movement sync across users in the same form.
-            </div>
-          </aside>
-        </section>
+            <aside className="rounded-[12px] border border-border bg-card p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-medium">Live collaborators</h3>
+              </div>
+              <div className="space-y-2">
+                {presence.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No other active editors.
+                  </p>
+                ) : (
+                  presence.map((user) => (
+                    <div
+                      key={user.userId}
+                      className="flex items-center justify-between rounded-[8px] border border-border bg-background px-3 py-2"
+                    >
+                      <span className="text-sm font-medium">{user.label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        online
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-6 mb-4 flex items-center gap-2">
+                <Component className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-medium">Form Elements</h3>
+              </div>
+              <div className="flex flex-col gap-2">
+                <DraggableSidebarItem
+                  type="short_text"
+                  label="Text Question"
+                  icon={FilePlus2}
+                />
+                <DraggableSidebarItem
+                  type="checkbox"
+                  label="Checkbox Question"
+                  icon={Check}
+                />
+                <DraggableSidebarItem
+                  type="multiple_choice"
+                  label="Multiple Choice"
+                  icon={List}
+                />
+              </div>
+
+              <div className="mt-6 rounded-[10px] border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                Changes are event-sourced. Block edits, metadata updates, and
+                cursor movement sync across users in the same form.
+              </div>
+            </aside>
+          </section>
+
+          <DragOverlay>
+            {activeId && String(activeId).startsWith("new-") ? (
+              <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3 shadow-sm opacity-80">
+                <span className="text-sm font-medium">New Block</span>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
     </main>
   )

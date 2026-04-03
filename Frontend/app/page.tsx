@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import {
   ArrowRight,
@@ -16,6 +17,7 @@ import {
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
+import { apiFetch } from "@/lib/api"
 
 const features = [
   {
@@ -51,6 +53,20 @@ const stats = [
 ]
 
 export default function Page() {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null)
+
+  React.useEffect(() => {
+    apiFetch("/auth/me")
+      .then(() => {
+        setIsAuthenticated(true)
+        router.push("/dashboard")
+      })
+      .catch(() => {
+        setIsAuthenticated(false)
+      })
+  }, [router])
+
   return (
     <main className="relative min-h-svh overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.14),transparent_24%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent)] text-foreground">
       <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.02)_45%,transparent_70%)] opacity-70" />
@@ -70,9 +86,16 @@ export default function Page() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" className="rounded-2xl">
-              <Link href="/login">Sign in</Link>
-            </Button>
+            {!isAuthenticated && (
+              <Button asChild variant="ghost" className="rounded-2xl">
+                <Link href="/login">Sign in</Link>
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button asChild variant="ghost" className="rounded-2xl">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            )}
             <ThemeToggle />
           </div>
         </header>
@@ -94,12 +117,22 @@ export default function Page() {
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="rounded-2xl px-6">
-                <Link href="/login">
-                  Start free
-                  <ArrowRight className="ml-2 size-4" />
-                </Link>
-              </Button>
+              {!isAuthenticated && (
+                <Button asChild size="lg" className="rounded-2xl px-6">
+                  <Link href="/login">
+                    Start free
+                    <ArrowRight className="ml-2 size-4" />
+                  </Link>
+                </Button>
+              )}
+              {isAuthenticated && (
+                <Button asChild size="lg" className="rounded-2xl px-6">
+                  <Link href="/dashboard">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 size-4" />
+                  </Link>
+                </Button>
+              )}
               <Button
                 asChild
                 variant="outline"

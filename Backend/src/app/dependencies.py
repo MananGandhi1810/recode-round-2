@@ -1,17 +1,16 @@
 from fastapi import Cookie, Depends, HTTPException, Request, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import asyncpg
 
 from app.core.database import get_db
 from app.core.security import decode_token
-from app.models.user import User
+from app.schemas.auth import AuthUser
 
 
 async def get_current_user(
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    conn: asyncpg.Connection = Depends(get_db),
     access_token: str | None = Cookie(default=None),
-) -> User:
+) -> AuthUser:
     token = (
         access_token
         or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
@@ -29,10 +28,14 @@ async def get_current_user(
         ) from exc
 
     user_id = payload.get("sub")
-    result = await session.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
+    if not user_id:
+         raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session token"
+        )
+
+    row = await conn.fetchrow("SELECT id, email, full_name FROM users WHERE id = $1::uuid", user_id)
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
-    return user
+    return AuthUser(id=str(row["id"]), email=row["email"], full_name=row["full_name"])

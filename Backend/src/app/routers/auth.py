@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy.ext.asyncio import AsyncSession
+import asyncpg
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies import get_current_user
-from app.models.user import User
 from app.schemas.auth import AuthResponse, AuthUser, OTPRequest, OTPVerify
 from app.services.auth_service import request_otp, verify_otp
 
@@ -27,11 +26,11 @@ async def request_sign_in_code(payload: OTPRequest) -> dict[str, str]:
 async def verify_sign_in_code(
     payload: OTPVerify,
     response: Response,
-    session: AsyncSession = Depends(get_db),
+    conn: asyncpg.Connection = Depends(get_db),
 ) -> AuthResponse:
     try:
         token, user = await verify_otp(
-            session, payload.email, payload.otp, payload.full_name
+            conn, payload.email, payload.otp, payload.full_name
         )
     except ValueError as exc:
         raise HTTPException(
@@ -57,9 +56,5 @@ def logout(response: Response) -> dict[str, str]:
 
 
 @router.get("/me", response_model=AuthUser)
-async def me(current_user: User = Depends(get_current_user)) -> AuthUser:
-    return AuthUser(
-        id=str(current_user.id),
-        email=current_user.email,
-        full_name=current_user.full_name,
-    )
+async def me(current_user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    return current_user

@@ -6,7 +6,7 @@ services:
     container_name: backend
     volumes:
       - ./Backend/src:/app/src
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: bash src/start.sh
     ports:
       - "8000:8000"
     env_file:
