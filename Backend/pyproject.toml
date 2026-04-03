@@ -18,4 +18,5 @@ dependencies = [
     "email-validator>=2.2.0",
     "psycopg2-binary",
     "motor>=3.3.0",
+    "websockets>=12.0",
 ]
