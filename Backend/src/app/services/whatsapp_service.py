@@ -4,6 +4,7 @@ import base64
 from typing import List, Dict, Any
 from app.core.redis import redis_client
 from app.services.form_service import FormService
+from app.services.organization_service import OrganizationService
 from app.schemas.form import FormBlock, FormResponse, FormSchema, FormBlockConfig
 from app.schemas.form import FieldResponse, FormSubmission
 from app.core.config import settings # Import settings
@@ -68,6 +69,10 @@ async def start_form_session(form_id: str, phone_numbers: List[str]):
         print(f"Form {form_id} has no questions.")
         return
 
+    # Fetch organization to get the slug for the link
+    org = await OrganizationService.get_organization_by_id(str(form.organization_id))
+    org_slug = org.slug if org else "org"
+
     for number in phone_numbers:
         # Normalize phone number to WhatsApp JID format if necessary (e.g., add @s.whatsapp.net)
         # The go-whatsapp-web-multidevice expects just the number for msisdn, but webhook sends JID
@@ -76,7 +81,9 @@ async def start_form_session(form_id: str, phone_numbers: List[str]):
 
         session = {
             "form_id": str(form.id),
+            "form_slug": form.slug,
             "organization_id": str(form.organization_id),
+            "organization_slug": org_slug,
             "current_question_index": 0,
             "answers": {},
             "questions": questions,
@@ -98,7 +105,7 @@ async def send_question(phone_number: str, session: dict):
 
     message = ""
     if question_index == 0:
-        form_url = f"{settings.frontend_url}/f/{session['form_id']}"
+        form_url = f"{settings.frontend_url}/{session['organization_slug']}/{session['form_slug']}"
         message += f"This is an automated form: *{session['form_name']}*\n"
         message += f"Alternatively, you can fill it out on the web: {form_url}\n\n"
         message += "Reply to fill answers here on WhatsApp.\n\n"

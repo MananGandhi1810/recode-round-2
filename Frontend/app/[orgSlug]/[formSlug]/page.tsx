@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { type FormRecord, type FormBlock, type LogicCondition, type LogicRule } from "@/lib/forms"
 import { useParams, useSearchParams } from "next/navigation"
 import { apiFetch } from "@/lib/api"
 import { type FormRecord } from "@/lib/forms"
@@ -114,8 +115,6 @@ export default function PublicFormPage() {
     [answers]
   )
 
-  import { type FormRecord, type FormBlock, type LogicCondition, type LogicRule } from "@/lib/forms"
-// ...
   const evaluateLogic = React.useCallback(
     (block: FormBlock) => {
       if (!block.config?.logic || block.config.logic.length === 0) return true
