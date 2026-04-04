@@ -401,17 +401,14 @@ async def websocket_endpoint(
                 except Exception as e:
                     await websocket.send_json({"type": "ERROR", "message": str(e)})
 
-            elif data.get("type") == "CURSOR":
-                cursor = data.get("cursor", {})
+            elif data.get("type") == "CURSOR_MOVE":
                 await manager.broadcast_to_form(
                     form_id,
                     {
-                        "type": "CURSOR_UPDATE",
-                        "cursor": {
-                            **cursor,
-                            "userId": user_meta["userId"],
-                            "label": user_meta["label"],
-                        },
+                        "type": "CURSOR_MOVE",
+                        "userId": user_meta["userId"],
+                        "x": data.get("x", 0),
+                        "y": data.get("y", 0),
                     },
                     exclude=websocket,
                 )

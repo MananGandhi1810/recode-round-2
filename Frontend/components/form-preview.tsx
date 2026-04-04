@@ -405,13 +405,47 @@ export function FormPreview({
                     </div>
                   )}
 
+                  {block.type === "upi_payment" && (
+                    <div className="flex flex-col items-center space-y-6">
+                      <div className="inline-block rounded-xl border border-border bg-white p-4 shadow-sm">
+                        <QRCodeSVG
+                          value={`upi://pay?pa=${block.config?.upiId}&pn=Merchant&am=${parseMentions(block.config?.upiAmount || "0")}&cu=INR`}
+                          size={200}
+                          level="Q"
+                        />
+                      </div>
+                      <p className="text-sm font-medium">
+                        Scan to pay{" "}
+                        {parseMentions(block.config?.upiAmount || "0")} INR via
+                        UPI
+                      </p>
+
+                      <div className="w-full space-y-4 border-t border-border pt-4">
+                        <input
+                          type="text"
+                          className={cn(
+                            "w-full border px-4 py-4 text-xl transition outline-none",
+                            iClass
+                          )}
+                          placeholder="Enter Transaction ID / UTR"
+                          value={answers[block.id] || ""}
+                          onChange={(e) =>
+                            handleAnswer(block.id, e.target.value)
+                          }
+                        />
+                        <p className="text-center text-xs text-muted-foreground">
+                          Enter the transaction ID after completing the payment
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {[
                     "checkbox",
                     "multiple_choice",
                     "dropdown",
                     "date_picker",
                     "rating",
-                    "upi_payment",
                   ].includes(block.type) && (
                     <div className="rounded-xl border-2 border-dashed border-muted p-8 text-center text-muted-foreground">
                       {block.type.replace("_", " ")} input preview

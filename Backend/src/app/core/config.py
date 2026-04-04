@@ -19,11 +19,11 @@ class Settings(BaseSettings):
         default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES"
     )
     database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/recode",
+        default="postgresql+asyncpg://postgres:postgres@rc-postgres:5432/recode",
         alias="DATABASE_URL",
     )
-    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
-    mongodb_url: str = Field(default="mongodb://localhost:27017", alias="MONGODB_URL")
+    redis_url: str = Field(default="redis://rc-redis:6379/0", alias="REDIS_URL")
+    mongodb_url: str = Field(default="mongodb://admin:password@rc-mongodb:27017/?authSource=admin", alias="MONGODB_URL")
     mongodb_db_name: str = Field(default="form_builder", alias="MONGODB_DB_NAME")
     resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
     resend_sender_email: str = Field(default="", alias="RESEND_SENDER_EMAIL")

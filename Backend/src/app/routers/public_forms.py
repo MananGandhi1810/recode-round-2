@@ -225,7 +225,7 @@ async def redirect_to_file(form_id: str, file_name: str):
     # Use the signing client logic to ensure signature matches public access
     signing_client = boto3.client(
         "s3",
-        endpoint_url="http://localhost:9002",
+        endpoint_url="https://formbar-storage.manan.cloud",
         aws_access_key_id="rustfsadmin",
         aws_secret_access_key="rustfsadmin",
         region_name="us-east-1",
