@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 from app.core.mongodb import get_mongo_db
 from app.schemas.form import FormCreate, FormResponse, FormEventCreate
 
+
 class FormService:
     @staticmethod
     async def create_form(org_id: str, form_in: FormCreate) -> FormResponse:
@@ -59,7 +60,7 @@ class FormService:
             expires_at=doc.get("expires_at"),
             schema_snapshot=doc.get("schema_snapshot", {}),
             created_at=doc["created_at"],
-            updated_at=doc["updated_at"]
+            updated_at=doc["updated_at"],
         )
 
     @staticmethod
@@ -122,16 +123,20 @@ class FormService:
                 update_fields["theme"] = theme
             if isinstance(slug, str) and len(slug) > 2:
                 # Check unique
-                exists = await db.forms.find_one({"slug": slug, "_id": {"$ne": form_id}})
+                exists = await db.forms.find_one(
+                    {"slug": slug, "_id": {"$ne": form_id}}
+                )
                 if not exists:
                     update_fields["slug"] = slug
             if isinstance(is_quiz, bool):
                 update_fields["is_quiz"] = is_quiz
-            
+
             if expires_at is not None:
                 try:
                     # Convert to datetime if it's string
-                    update_fields["expires_at"] = datetime.datetime.fromisoformat(str(expires_at).replace('Z', '+00:00'))
+                    update_fields["expires_at"] = datetime.datetime.fromisoformat(
+                        str(expires_at).replace("Z", "+00:00")
+                    )
                 except:
                     pass
             elif "expires_at" in event_in.payload:
@@ -146,14 +151,12 @@ class FormService:
             "user_id": user_id,
             "event_type": event_in.event_type,
             "payload": event_in.payload,
-            "created_at": now
+            "created_at": now,
         }
         await db.form_events.insert_one(event_doc)
 
         updated_doc = await db.forms.find_one_and_update(
-            {"_id": form_id},
-            {"$set": update_fields},
-            return_document=True
+            {"_id": form_id}, {"$set": update_fields}, return_document=True
         )
 
         return FormService._map_doc_to_response(updated_doc)

@@ -22,6 +22,7 @@ from app.schemas.form import FormResponse, FormCreate, FormEventCreate
 
 router = APIRouter()
 
+
 def _email_initials(email: str) -> str:
     local = email.split("@", 1)[0]
     chunks = [chunk for chunk in re.split(r"[^a-zA-Z0-9]+", local) if chunk]
@@ -29,12 +30,14 @@ def _email_initials(email: str) -> str:
         return (chunks[0][0] + chunks[1][0]).upper()
     return local[:2].upper() if local else "U"
 
+
 async def _ensure_org_membership(
     conn: asyncpg.Connection, org_id: str, user_id: str
 ) -> None:
     row = await conn.fetchrow(
         "SELECT id FROM organization_members WHERE organization_id = $1::uuid AND user_id = $2::uuid",
-        org_id, user_id
+        org_id,
+        user_id,
     )
     if row is None:
         raise HTTPException(
@@ -42,7 +45,10 @@ async def _ensure_org_membership(
             detail="Not a member of this organization",
         )
 
-async def _get_user_from_websocket(websocket: WebSocket, conn: asyncpg.Connection) -> AuthUser:
+
+async def _get_user_from_websocket(
+    websocket: WebSocket, conn: asyncpg.Connection
+) -> AuthUser:
     auth_header = websocket.headers.get("authorization", "")
     bearer_token = auth_header.removeprefix("Bearer ").strip()
     token = (
@@ -68,12 +74,15 @@ async def _get_user_from_websocket(websocket: WebSocket, conn: asyncpg.Connectio
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session payload"
         )
 
-    row = await conn.fetchrow("SELECT id, email, full_name FROM users WHERE id = $1::uuid", user_id)
+    row = await conn.fetchrow(
+        "SELECT id, email, full_name FROM users WHERE id = $1::uuid", user_id
+    )
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
     return AuthUser(id=str(row["id"]), email=row["email"], full_name=row["full_name"])
+
 
 @router.post("/organization/{org_id}", response_model=FormResponse)
 async def create_form(
@@ -84,12 +93,15 @@ async def create_form(
 ):
     await _ensure_org_membership(conn, org_id, str(user.id))
     new_form = await FormService.create_form(org_id=org_id, form_in=form_in)
-    
-    org_row = await conn.fetchrow("SELECT slug FROM organizations WHERE id = $1::uuid", org_id)
+
+    org_row = await conn.fetchrow(
+        "SELECT slug FROM organizations WHERE id = $1::uuid", org_id
+    )
     if org_row:
         new_form.organization_slug = org_row["slug"]
-        
+
     return new_form
+
 
 @router.get("/organization/{org_id}", response_model=List[FormResponse])
 async def list_org_forms(
@@ -99,13 +111,16 @@ async def list_org_forms(
 ):
     await _ensure_org_membership(conn, org_id, str(user.id))
     forms = await FormService.get_org_forms(org_id=org_id)
-    
-    org_row = await conn.fetchrow("SELECT slug FROM organizations WHERE id = $1::uuid", org_id)
+
+    org_row = await conn.fetchrow(
+        "SELECT slug FROM organizations WHERE id = $1::uuid", org_id
+    )
     if org_row:
         for f in forms:
             f.organization_slug = org_row["slug"]
-            
+
     return forms
+
 
 @router.get("/{form_id}", response_model=FormResponse)
 async def get_form(
@@ -117,12 +132,15 @@ async def get_form(
     if not form:
         raise HTTPException(404, "Form not found")
     await _ensure_org_membership(conn, str(form.organization_id), str(user.id))
-    
-    org_row = await conn.fetchrow("SELECT slug FROM organizations WHERE id = $1::uuid", form.organization_id)
+
+    org_row = await conn.fetchrow(
+        "SELECT slug FROM organizations WHERE id = $1::uuid", form.organization_id
+    )
     if org_row:
         form.organization_slug = org_row["slug"]
-        
+
     return form
+
 
 @router.patch("/{form_id}", response_model=FormResponse)
 async def update_form_meta(
@@ -141,6 +159,7 @@ async def update_form_meta(
         form_id=form_id, user_id=str(user.id), event_in=event_in
     )
 
+
 @router.post("/{form_id}/events", response_model=FormResponse)
 async def apply_form_event(
     form_id: str,
@@ -156,6 +175,7 @@ async def apply_form_event(
     return await FormService.process_event(
         form_id=form_id, user_id=str(user.id), event_in=event_in
     )
+
 
 @router.websocket("/{form_id}/ws")
 async def websocket_endpoint(

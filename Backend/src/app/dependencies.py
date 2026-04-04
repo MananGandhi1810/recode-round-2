@@ -29,11 +29,13 @@ async def get_current_user(
 
     user_id = payload.get("sub")
     if not user_id:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session token"
         )
 
-    row = await conn.fetchrow("SELECT id, email, full_name FROM users WHERE id = $1::uuid", user_id)
+    row = await conn.fetchrow(
+        "SELECT id, email, full_name FROM users WHERE id = $1::uuid", user_id
+    )
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"

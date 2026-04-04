@@ -2,17 +2,20 @@ import asyncpg
 from typing import AsyncGenerator
 from app.core.config import settings
 
+
 class Database:
     pool: asyncpg.Pool = None
 
+
 db = Database()
+
 
 async def connect_to_db():
     dsn = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
     db.pool = await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10)
-    
+
     async with db.pool.acquire() as conn:
-        await conn.execute('''
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -45,11 +48,13 @@ async def connect_to_db():
                 created_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
             );
 
-        ''')
+        """)
+
 
 async def close_db_connection():
     if db.pool:
         await db.pool.close()
+
 
 async def get_db() -> AsyncGenerator[asyncpg.Connection, None]:
     async with db.pool.acquire() as conn:

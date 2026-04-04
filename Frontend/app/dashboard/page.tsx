@@ -43,13 +43,16 @@ export default function UserOrganizationsPage() {
   const [showNewForm, setShowNewForm] = React.useState(false)
   const [newFormName, setNewFormName] = React.useState("")
   const [newFormDescription, setNewFormDescription] = React.useState("")
-  
+
   // Invitation State
   const [showInviteMember, setShowInviteMember] = React.useState(false)
   const [inviteEmail, setInviteEmail] = React.useState("")
   const [inviteRole, setInviteRole] = React.useState("member")
   const [inviting, setInviting] = React.useState(false)
-  const [inviteMessage, setInviteMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [inviteMessage, setInviteMessage] = React.useState<{
+    type: "success" | "error"
+    text: string
+  } | null>(null)
 
   const [formsByOrganization, setFormsByOrganization] = React.useState<
     Record<string, FormRecord[]>
@@ -170,11 +173,18 @@ export default function UserOrganizationsPage() {
           role: inviteRole,
         }),
       })
-      setInviteMessage({ type: 'success', text: 'Member invited successfully.' })
+      setInviteMessage({
+        type: "success",
+        text: "Member invited successfully.",
+      })
       setInviteEmail("")
       setShowInviteMember(false)
     } catch (error) {
-      setInviteMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to invite member.' })
+      setInviteMessage({
+        type: "error",
+        text:
+          error instanceof Error ? error.message : "Failed to invite member.",
+      })
     } finally {
       setInviting(false)
     }
@@ -326,7 +336,9 @@ export default function UserOrganizationsPage() {
 
         <section className="mt-14">
           <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-[32px] font-medium tracking-tight">Workspace</h2>
+            <h2 className="text-[32px] font-medium tracking-tight">
+              Workspace
+            </h2>
             <div className="flex items-center gap-3">
               <Button
                 onClick={() => setShowInviteMember((current) => !current)}
@@ -354,7 +366,7 @@ export default function UserOrganizationsPage() {
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-muted-foreground">
+              <div className="mb-4 flex flex-col justify-between gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center">
                 <div>
                   Managing workspace for{" "}
                   <span className="font-medium text-foreground">
@@ -362,9 +374,11 @@ export default function UserOrganizationsPage() {
                   </span>
                 </div>
               </div>
-              
+
               {inviteMessage && (
-                <div className={`mb-6 rounded-[10px] border px-4 py-3 text-sm ${inviteMessage.type === 'error' ? 'border-destructive/50 bg-destructive/10 text-destructive' : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600'}`}>
+                <div
+                  className={`mb-6 rounded-[10px] border px-4 py-3 text-sm ${inviteMessage.type === "error" ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-emerald-500/50 bg-emerald-500/10 text-emerald-600"}`}
+                >
                   {inviteMessage.text}
                 </div>
               )}
@@ -433,7 +447,7 @@ export default function UserOrganizationsPage() {
                     </select>
                   </div>
 
-                  <div className="inline-flex items-center gap-2 rounded-[8px] border border-border bg-card px-3 py-2 text-sm text-foreground hidden sm:flex">
+                  <div className="hidden inline-flex items-center gap-2 rounded-[8px] border border-border bg-card px-3 py-2 text-sm text-foreground sm:flex">
                     <ArrowDownWideNarrow className="h-4 w-4 text-muted-foreground" />
                     Sorted by name
                   </div>
@@ -515,14 +529,14 @@ export default function UserOrganizationsPage() {
                       <article className="rounded-[10px] border border-border/80 bg-card p-6 shadow-sm transition hover:bg-accent/60">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h3 className="text-[28px] font-semibold leading-none">
+                            <h3 className="text-[28px] leading-none font-semibold">
                               {form.name.slice(0, 1).toUpperCase()}
                             </h3>
                             <p className="mt-4 text-[20px] leading-tight font-medium tracking-tight">
                               {form.name}
                             </p>
                             {form.description ? (
-                              <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
                                 {form.description}
                               </p>
                             ) : null}

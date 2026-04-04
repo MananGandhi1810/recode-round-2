@@ -22,19 +22,25 @@ async def verify_otp(
     if not verify_stored_otp(normalized_email, otp):
         raise ValueError("Invalid or expired OTP")
 
-    row = await conn.fetchrow("SELECT id, email, full_name FROM users WHERE email = $1", normalized_email)
-    
+    row = await conn.fetchrow(
+        "SELECT id, email, full_name FROM users WHERE email = $1", normalized_email
+    )
+
     if row is None:
         row = await conn.fetchrow(
-            "INSERT INTO users (email, full_name) VALUES ($1, $2) RETURNING id, email, full_name", 
-            normalized_email, full_name
+            "INSERT INTO users (email, full_name) VALUES ($1, $2) RETURNING id, email, full_name",
+            normalized_email,
+            full_name,
         )
     elif full_name and not row["full_name"]:
         row = await conn.fetchrow(
-            "UPDATE users SET full_name = $1 WHERE id = $2 RETURNING id, email, full_name", 
-            full_name, row["id"]
+            "UPDATE users SET full_name = $1 WHERE id = $2 RETURNING id, email, full_name",
+            full_name,
+            row["id"],
         )
 
     clear_stored_otp(normalized_email)
     token = create_access_token(str(row["id"]))
-    return token, AuthUser(id=str(row["id"]), email=row["email"], full_name=row["full_name"])
+    return token, AuthUser(
+        id=str(row["id"]), email=row["email"], full_name=row["full_name"]
+    )
