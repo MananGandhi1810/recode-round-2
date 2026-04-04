@@ -53,7 +53,7 @@ async def generate_form_structure(payload: AiGenerateRequest):
         }
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-3.0-flash-preview")
         response = model.generate_content(
             f"{SYSTEM_PROMPT}\n\nUser Request: {payload.prompt}"
         )

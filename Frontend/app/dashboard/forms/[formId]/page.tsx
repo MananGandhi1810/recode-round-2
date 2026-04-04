@@ -401,6 +401,20 @@ function BlockItem({
           </div>
         )}
 
+        {block.type === "upi_payment" && (
+          <div className="mt-4 flex flex-col items-center space-y-4 rounded-xl border border-dashed border-border bg-muted/10 p-6">
+            <div className="rounded-lg bg-white p-2 shadow-sm opacity-50">
+              <CreditCard className="size-16 text-muted-foreground" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold">UPI Payment Preview</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
+                {block.config.upiId || "No UPI ID set"} • {block.config.upiAmount || "0"} INR
+              </p>
+            </div>
+          </div>
+        )}
+
         {showConfig && (
           <div className="mt-6 animate-in space-y-5 rounded-2xl border border-border bg-muted/30 p-5 duration-200 zoom-in-95 fade-in">
             <h4 className="border-b border-border pb-2 text-[10px] font-black tracking-[0.2em] text-muted-foreground uppercase">
@@ -496,6 +510,47 @@ function BlockItem({
                       onBlur={() => onBlur(block.id)}
                       className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold outline-none"
                       placeholder="∞"
+                    />
+                  </div>
+                </>
+              )}
+
+              {block.type === "upi_payment" && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase">
+                      UPI ID
+                    </label>
+                    <input
+                      type="text"
+                      value={block.config.upiId || ""}
+                      onChange={(e) =>
+                        onChange(block.id, (b) => ({
+                          ...b,
+                          config: { ...b.config, upiId: e.target.value },
+                        }))
+                      }
+                      onBlur={() => onBlur(block.id)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold outline-none"
+                      placeholder="merchant@upi"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase">
+                      Amount (INR)
+                    </label>
+                    <input
+                      type="text"
+                      value={block.config.upiAmount || ""}
+                      onChange={(e) =>
+                        onChange(block.id, (b) => ({
+                          ...b,
+                          config: { ...b.config, upiAmount: e.target.value },
+                        }))
+                      }
+                      onBlur={() => onBlur(block.id)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold outline-none"
+                      placeholder="0.00"
                     />
                   </div>
                 </>
@@ -932,6 +987,7 @@ export default function FormEditorPage() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
   const [activeId, setActiveId] = React.useState<string | null>(null)
+  const [selectedSubmission, setSelectedSubmission] = React.useState<any | null>(null)
 
   const loadSubmissions = React.useCallback(async () => {
     setSubsLoading(true)
@@ -1833,9 +1889,7 @@ export default function FormEditorPage() {
                                   variant="ghost"
                                   size="sm"
                                   className="h-9 rounded-full px-5 text-[10px] font-black tracking-widest text-primary uppercase opacity-0 transition-all group-hover:opacity-100 hover:bg-primary hover:text-primary-foreground"
-                                  onClick={() =>
-                                    alert(JSON.stringify(sub.answers, null, 2))
-                                  }
+                                  onClick={() => setSelectedSubmission(sub)}
                                 >
                                   Inspect
                                 </Button>
@@ -1848,6 +1902,56 @@ export default function FormEditorPage() {
                   </div>
                 )}
               </div>
+
+              <Dialog
+                open={!!selectedSubmission}
+                onOpenChange={(open) => !open && setSelectedSubmission(null)}
+              >
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-black">Submission Details</DialogTitle>
+                    <DialogDescription className="font-mono text-xs uppercase tracking-widest">
+                      ID: {selectedSubmission?.id}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-2 gap-4 rounded-2xl bg-muted/30 p-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Submitted At</p>
+                        <p className="font-bold text-sm">
+                          {selectedSubmission && new Date(selectedSubmission.submitted_at).toLocaleString()}
+                        </p>
+                      </div>
+                      {isQuizDraft && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Final Score</p>
+                          <p className="font-black text-emerald-600 text-lg">
+                            {selectedSubmission?.score} Pts
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] border-b border-border pb-2">Responses</h4>
+                      {blocks.filter(b => !b.type.startsWith('h') && b.type !== 'paragraph').map(block => (
+                        <div key={block.id} className="space-y-1.5 border-b border-border/50 pb-3 last:border-0">
+                          <p className="text-xs font-black text-muted-foreground/70 uppercase tracking-wider">{block.label || block.type}</p>
+                          <div className="font-bold text-base bg-muted/10 rounded-lg p-2 min-h-[40px] flex items-center">
+                            {selectedSubmission?.answers?.[block.id] ? (
+                              Array.isArray(selectedSubmission.answers[block.id]) 
+                                ? (selectedSubmission.answers[block.id] as string[]).join(", ")
+                                : String(selectedSubmission.answers[block.id])
+                            ) : (
+                              <span className="text-muted-foreground italic font-normal text-sm">No response</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 
