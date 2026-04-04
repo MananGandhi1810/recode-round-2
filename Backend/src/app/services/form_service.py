@@ -74,7 +74,11 @@ class FormService:
         if etype == "ADD_BLOCK":
             if "block" in payload:
                 index = payload.get("index", -1)
-                if index is not None and isinstance(index, int) and 0 <= index <= len(blocks):
+                if (
+                    index is not None
+                    and isinstance(index, int)
+                    and 0 <= index <= len(blocks)
+                ):
                     blocks.insert(index, payload["block"])
                 else:
                     blocks.append(payload["block"])

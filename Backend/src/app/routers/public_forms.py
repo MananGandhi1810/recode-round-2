@@ -65,15 +65,33 @@ async def submit_form(form_id: str, payload: FormSubmission):
 
         if config.get("required") and not answer:
             if not config.get("logic"):
-                raise HTTPException(400, detail={"block_id": b_id, "message": f"Field '{block.get('label', b_id)}' is required"})
+                raise HTTPException(
+                    400,
+                    detail={
+                        "block_id": b_id,
+                        "message": f"Field '{block.get('label', b_id)}' is required",
+                    },
+                )
 
         if answer and isinstance(answer, str):
             min_len = config.get("minLength")
             max_len = config.get("maxLength")
             if min_len is not None and len(answer) < min_len:
-                raise HTTPException(400, detail={"block_id": b_id, "message": f"Minimum {min_len} characters required for '{block.get('label', b_id)}'"})
+                raise HTTPException(
+                    400,
+                    detail={
+                        "block_id": b_id,
+                        "message": f"Minimum {min_len} characters required for '{block.get('label', b_id)}'",
+                    },
+                )
             if max_len is not None and len(answer) > max_len:
-                raise HTTPException(400, detail={"block_id": b_id, "message": f"Maximum {max_len} characters allowed for '{block.get('label', b_id)}'"})
+                raise HTTPException(
+                    400,
+                    detail={
+                        "block_id": b_id,
+                        "message": f"Maximum {max_len} characters allowed for '{block.get('label', b_id)}'",
+                    },
+                )
 
     db = get_mongo_db()
     sub_id = str(uuid.uuid4())

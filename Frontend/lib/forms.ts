@@ -67,12 +67,12 @@ export type FormEventPayload = {
 }
 
 export type FormSubmissionRecord = {
-  id: string;
-  form_id: string;
-  organization_id: string;
-  answers: Record<string, string | string[]>;
-  submitted_at: string;
-  score?: number;
+  id: string
+  form_id: string
+  organization_id: string
+  answers: Record<string, string | string[]>
+  submitted_at: string
+  score?: number
 }
 
 function asBlocks(value: unknown): FormBlock[] {
@@ -90,8 +90,9 @@ export function applyFormEvent(
 
   if (event.event_type === "ADD_BLOCK") {
     const block = event.payload.block as FormBlock | undefined
-    const index = typeof event.payload.index === "number" ? event.payload.index : -1
-    
+    const index =
+      typeof event.payload.index === "number" ? event.payload.index : -1
+
     if (block) {
       if (index >= 0 && index <= currentBlocks.length) {
         const copy = [...currentBlocks]
@@ -147,7 +148,12 @@ export function getWsBaseUrl() {
   return apiBase.replace("http://", "ws://")
 }
 
-export async function generateForm(orgId: string, prompt: string, name: string = "AI Generated Form", description: string = ""): Promise<FormRecord> {
+export async function generateForm(
+  orgId: string,
+  prompt: string,
+  name: string = "AI Generated Form",
+  description: string = ""
+): Promise<FormRecord> {
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("access_token="))
