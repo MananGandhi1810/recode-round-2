@@ -7,6 +7,7 @@ import {
   Plus,
   Blocks,
   Loader2,
+  Copy,
   ListFilter,
   ArrowDownWideNarrow,
   Grid3X3,
@@ -15,6 +16,7 @@ import {
   UserPlus,
   Trash2,
 } from "lucide-react"
+import toast from "react-hot-toast"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -236,7 +238,7 @@ export default function UserOrganizationsPage() {
   async function deleteForm(orgId: string, formId: string) {
     if (
       !confirm(
-        "Are you sure you want to delete this form? This cannot be undone."
+        'Are you sure you want to delete this form? This cannot be undone.'
       )
     ) {
       return
@@ -580,17 +582,36 @@ export default function UserOrganizationsPage() {
                           <span>•</span>
                           <span>{formatUpdatedLabel(form.updated_at)}</span>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            deleteForm(selectedOrganizationId, form.id)
-                          }}
-                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                          title="Delete Form"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          {form.is_published && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                const url = form.organization_slug
+                                  ? `${window.location.origin}/${form.organization_slug}/${form.slug}`
+                                  : `${window.location.origin}/f/${form.id}`
+                                navigator.clipboard.writeText(url)
+                                toast.success("Link copied!")
+                              }}
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              title="Copy Link"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              deleteForm(selectedOrganizationId, form.id)
+                            }}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            title="Delete Form"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </article>
                   </Link>
@@ -618,17 +639,36 @@ export default function UserOrganizationsPage() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          deleteForm(selectedOrganizationId, form.id)
-                        }}
-                        className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                        title="Delete Form"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {form.is_published && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              const url = form.organization_slug
+                                ? `${window.location.origin}/${form.organization_slug}/${form.slug}`
+                                : `${window.location.origin}/f/${form.id}`
+                              navigator.clipboard.writeText(url)
+                              toast.success("Link copied!")
+                            }}
+                            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            title="Copy Link"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            deleteForm(selectedOrganizationId, form.id)
+                          }}
+                          className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          title="Delete Form"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </article>
                   </Link>
                 ))}

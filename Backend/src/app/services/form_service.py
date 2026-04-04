@@ -73,7 +73,11 @@ class FormService:
 
         if etype == "ADD_BLOCK":
             if "block" in payload:
-                blocks.append(payload["block"])
+                index = payload.get("index", -1)
+                if index is not None and isinstance(index, int) and 0 <= index <= len(blocks):
+                    blocks.insert(index, payload["block"])
+                else:
+                    blocks.append(payload["block"])
         elif etype == "UPDATE_BLOCK":
             block_id = payload.get("id")
             for i, b in enumerate(blocks):
@@ -124,6 +128,7 @@ class FormService:
             is_quiz = event_in.payload.get("is_quiz")
             expires_at = event_in.payload.get("expires_at")
             redirect_url = event_in.payload.get("redirect_url")
+            custom_css = event_in.payload.get("custom_css")
 
             if isinstance(name, str):
                 update_fields["name"] = name.strip() or doc["name"]

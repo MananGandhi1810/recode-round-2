@@ -73,6 +73,9 @@ export default function PublicFormPage() {
 
   const validateInput = (value: string, block: any): string | null => {
     if (block.config?.required && !value) return "This field is required"
+    if (block.config?.minLength && value.length < block.config.minLength) {
+      return `Minimum ${block.config.minLength} characters required`
+    }
     if (block.config?.maxLength && value.length > block.config.maxLength) {
       return `Maximum ${block.config.maxLength} characters allowed`
     }
@@ -92,19 +95,6 @@ export default function PublicFormPage() {
     }
     return null
   }
-
-  const handleBack = React.useCallback(() => {
-    if (currentStep > 0) setCurrentStep((s) => s - 1)
-  }, [currentStep])
-
-  React.useEffect(() => {
-    void apiFetch<FormRecord>(`/f/${params.formId}`)
-      .then(setForm)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load form")
-      )
-      .finally(() => setLoading(false))
-  }, [params.formId])
 
   const parseMentions = React.useCallback(
     (text: string) => {
@@ -142,6 +132,10 @@ export default function PublicFormPage() {
               return String(val || "") === String(condValue || "")
             case "not_equals":
               return String(val || "") !== String(condValue || "")
+            case "greater_than":
+              return Number(val || 0) > Number(condValue || 0)
+            case "less_than":
+              return Number(val || 0) < Number(condValue || 0)
             case "contains":
               return String(val || "")
                 .toLowerCase()
@@ -210,6 +204,19 @@ export default function PublicFormPage() {
       setTimeLeft(null)
     }
   }, [currentStep, form, visibleBlocks])
+
+  React.useEffect(() => {
+    void apiFetch<FormRecord>(`/f/${params.formId}`)
+      .then(setForm)
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Failed to load form")
+      )
+      .finally(() => setLoading(false))
+  }, [params.formId])
+
+  const handleBack = React.useCallback(() => {
+    if (currentStep > 0) setCurrentStep((s) => s - 1)
+  }, [currentStep])
 
   if (loading) {
     return (
@@ -287,7 +294,16 @@ export default function PublicFormPage() {
           window.location.href = form.redirect_url!
         }, 1500)
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.detail?.block_id) {
+        const blockIndex = visibleBlocks.findIndex(b => b.id === err.detail.block_id)
+        if (blockIndex !== -1) {
+          setCurrentStep(blockIndex)
+          setValidationError(err.detail.message)
+          setIsSubmitting(false)
+          return
+        }
+      }
       alert(
         "Failed to submit: " +
           (err instanceof Error ? err.message : "Unknown error")
@@ -374,11 +390,12 @@ export default function PublicFormPage() {
   return (
     <div
       className={cn(
-        "flex min-h-screen flex-col items-center justify-center transition-colors duration-300",
+        "flex min-h-screen flex-col items-center justify-center transition-colors duration-300 form-root",
         isEmbed ? "p-0" : "p-4 md:p-8",
         tClass
       )}
     >
+      {form.custom_css && <style>{form.custom_css}</style>}
       {!isEmbed && (
         <div className="fixed top-4 right-4 z-50">
           <ThemeToggle />

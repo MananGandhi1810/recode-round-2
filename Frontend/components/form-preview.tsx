@@ -99,6 +99,10 @@ export function FormPreview({
               return String(val || "") === String(condValue || "")
             case "not_equals":
               return String(val || "") !== String(condValue || "")
+            case "greater_than":
+              return Number(val || 0) > Number(condValue || 0)
+            case "less_than":
+              return Number(val || 0) < Number(condValue || 0)
             case "contains":
               return String(val || "")
                 .toLowerCase()
@@ -189,10 +193,11 @@ export function FormPreview({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 transition-colors duration-300 md:p-8",
+        "fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 transition-colors duration-300 md:p-8 form-root",
         tClass
       )}
     >
+      {form.custom_css && <style>{form.custom_css}</style>}
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-[110] rounded-full p-2 hover:bg-black/5"

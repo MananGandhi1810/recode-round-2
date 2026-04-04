@@ -26,10 +26,18 @@ import {
   Maximize2,
   FileSpreadsheet,
   CheckCircle2,
+  LayoutGrid,
+  Calendar,
+  Star,
+  Upload,
+  CreditCard,
+  Palette,
 } from "lucide-react"
+import toast from "react-hot-toast"
 
 import {
   DndContext,
+  useDroppable,
   closestCenter,
   PointerSensor,
   useSensor,
@@ -62,6 +70,7 @@ import {
 
 type PresenceUser = {
   userId: string
+  label: string
   initials: string
   color: string
 }
@@ -71,9 +80,18 @@ type WsIncoming =
   | { type: "CURSOR_JOIN"; user: PresenceUser }
   | { type: "CURSOR_LEAVE"; userId: string }
   | { type: "CURSOR_MOVE"; userId: string; x: number; y: number }
-  | { type: "FORM_EVENT"; payload: FormEventPayload }
+  | { type: "EVENT_APPLIED"; formEvent: FormEventPayload; actor?: any }
   | { type: "SCORE_UPDATE"; submission: any }
   | { type: "ERROR"; message: string }
+
+function DroppableCanvas({ children }: { children: React.ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: "canvas-root" })
+  return (
+    <div ref={setNodeRef} className="mt-4 space-y-3 pb-8" id="canvas">
+      {children}
+    </div>
+  )
+}
 
 function DraggableSidebarItem({
   type,
@@ -95,11 +113,13 @@ function DraggableSidebarItem({
       {...listeners}
       {...attributes}
       className={cn(
-        "flex cursor-grab items-center gap-3 rounded-[8px] border border-border bg-card p-3 text-sm font-medium transition-all hover:border-primary/50 hover:bg-muted/50",
-        isDragging && "opacity-50 shadow-sm"
+        "flex cursor-grab items-center gap-3 rounded-xl border border-border bg-card p-3.5 text-sm font-bold transition-all hover:border-primary/50 hover:bg-primary/5 hover:scale-[1.02] active:scale-95",
+        isDragging && "opacity-50 grayscale shadow-none"
       )}
     >
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+        <Icon className="h-4 w-4" />
+      </div>
       {label}
     </div>
   )
@@ -169,36 +189,36 @@ function BlockItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative z-10 flex items-start bg-background py-1"
+      className="group relative z-10 flex items-start bg-transparent py-2"
     >
-      <div className="absolute -left-12 hidden w-12 items-center justify-end pt-1 pr-2 opacity-0 transition-opacity group-hover:opacity-100 md:flex">
+      <div className="absolute -left-14 hidden w-12 items-center justify-end pt-2 pr-2 opacity-0 transition-opacity group-hover:opacity-100 md:flex">
         <button
           type="button"
           onClick={() =>
             addBlockBase(allBlocks.findIndex((b) => b.id === block.id) + 1)
           }
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="rounded-full p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
         >
           <Plus className="h-4 w-4" />
         </button>
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="cursor-grab rounded-full p-2 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all"
         >
           <GripVertical className="h-4 w-4" />
         </div>
       </div>
 
-      <div className="w-full rounded-[10px] border border-transparent p-3 transition-colors group-hover:border-border group-hover:bg-muted/30">
-        <div className="mb-2 flex items-center gap-2">
+      <div className="w-full rounded-2xl border border-border bg-background p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/20">
+        <div className="mb-4 flex items-center gap-3">
           <select
             value={block.type}
             onChange={(e) =>
               onChange(block.id, (b) => ({ ...b, type: e.target.value }))
             }
             onBlur={() => onBlur(block.id)}
-            className="rounded border-0 bg-muted/50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase outline-none focus:ring-0"
+            className="rounded-lg border-0 bg-muted px-2 py-1 text-[10px] font-black tracking-widest text-muted-foreground uppercase outline-none focus:ring-2 ring-primary/20 transition-all"
           >
             <option value="h1">Heading 1</option>
             <option value="h2">Heading 2</option>
@@ -214,30 +234,33 @@ function BlockItem({
             <option value="upi_payment">UPI Payment</option>
           </select>
           <div className="flex-1" />
+          <span className="mr-2 rounded-full bg-muted/50 px-2 py-0.5 text-[9px] font-black font-mono text-muted-foreground tracking-tighter">
+            #{block.id}
+          </span>
           <button
             type="button"
             onClick={() => setShowConfig(!showConfig)}
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground"
+            className={cn("rounded-full p-2 transition-all", showConfig ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
           >
             <Settings2 className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => setShowLogic(!showLogic)}
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground"
+            className={cn("rounded-full p-2 transition-all", showLogic ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
           >
             <Route className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => onRemove(block.id)}
-            className="rounded-md p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
           >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-1">
+        <div className="relative">
           <input
             value={block.label}
             onChange={(e) =>
@@ -252,35 +275,35 @@ function BlockItem({
                   ? "Type something..."
                   : "Question..."
             }
-            className={`w-full border-0 bg-transparent px-0 py-1 outline-none placeholder:text-muted-foreground/50 focus:ring-0 ${
+            className={`w-full border-0 bg-transparent px-0 py-1 outline-none placeholder:text-muted-foreground/30 focus:ring-0 ${
               block.type === "h1"
-                ? "text-3xl font-bold"
+                ? "text-3xl font-black tracking-tight"
                 : block.type === "h2"
-                  ? "text-xl font-bold"
-                  : "text-base"
+                  ? "text-xl font-bold tracking-tight"
+                  : "text-base font-semibold"
             }`}
           />
         </div>
 
         {/* Render interactive parts if input */}
         {(block.type === "short_text" || block.type === "long_text") && (
-          <div className="mt-2">
+          <div className="mt-4 space-y-3">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+              <span className="inline-block size-1 rounded-full bg-primary" />
+              Dynamic Reference Hint: Type @ or use {"{{"}{block.id}{"}}"}
+            </p>
             {block.type === "short_text" ? (
               <input
                 disabled
-                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground opacity-50"
-                placeholder={
-                  block.config.placeholder || "Type your answer here..."
-                }
+                className="w-full rounded-xl border border-input bg-muted/20 px-4 py-3 text-sm text-muted-foreground/50 italic"
+                placeholder={block.config.placeholder || "Type your answer here..."}
               />
             ) : (
               <textarea
                 disabled
                 rows={3}
-                className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground opacity-50"
-                placeholder={
-                  block.config.placeholder || "Type your answer here..."
-                }
+                className="w-full resize-none rounded-xl border border-input bg-muted/20 px-4 py-3 text-sm text-muted-foreground/50 italic"
+                placeholder={block.config.placeholder || "Type your answer here..."}
               />
             )}
           </div>
@@ -289,14 +312,10 @@ function BlockItem({
         {(block.type === "checkbox" ||
           block.type === "multiple_choice" ||
           block.type === "dropdown") && (
-          <div className="mt-2 space-y-2">
-            {(
-              block.config.options || [{ label: "Option 1", value: "opt1" }]
-            ).map((opt, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div
-                  className={`h-4 w-4 border border-input opacity-50 ${block.type === "checkbox" ? "rounded-sm" : "rounded-full"}`}
-                ></div>
+          <div className="mt-4 space-y-2">
+            {(block.config.options || [{ label: "Option 1", value: "opt1" }]).map((opt, i) => (
+              <div key={i} className="flex items-center gap-3 group/opt">
+                <div className={cn("h-5 w-5 border-2 border-muted bg-muted/20 transition-colors group-hover/opt:border-primary/30", block.type === "checkbox" ? "rounded-lg" : "rounded-full")} />
                 <input
                   value={opt.label}
                   onChange={(e) => {
@@ -304,15 +323,13 @@ function BlockItem({
                       const newOpts = [...(b.config.options || [])]
                       newOpts[i] = {
                         label: e.target.value,
-                        value: e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9]/g, ""),
+                        value: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
                       }
                       return { ...b, config: { ...b.config, options: newOpts } }
                     })
                   }}
                   onBlur={() => onBlur(block.id)}
-                  className="w-full border-0 bg-transparent text-sm opacity-80 outline-none"
+                  className="flex-1 border-0 bg-transparent text-sm font-medium outline-none placeholder:text-muted-foreground/30 py-1"
                   placeholder="Option label"
                 />
               </div>
@@ -331,446 +348,284 @@ function BlockItem({
                 })
                 onBlur(block.id)
               }}
-              className="ml-6 text-xs text-primary hover:underline"
+              className="ml-8 text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors pt-2"
             >
-              + Add option
+              + Add Choice
             </button>
           </div>
         )}
 
-        {block.type === "upi_payment" && (
-          <div className="mt-2 space-y-3 rounded-md border border-border bg-muted/20 p-3">
-            <input
-              type="text"
-              placeholder="UPI ID (e.g. user@bank)"
-              value={block.config.upiId || ""}
-              onChange={(e) =>
-                onChange(block.id, (b) => ({
-                  ...b,
-                  config: { ...b.config, upiId: e.target.value },
-                }))
-              }
-              onBlur={() => onBlur(block.id)}
-              className="w-full border-b bg-transparent pb-1 text-sm opacity-80 outline-none focus:border-primary"
-            />
-            <input
-              type="text"
-              placeholder="Amount (fixed or {{block_id}})"
-              value={block.config.upiAmount || ""}
-              onChange={(e) =>
-                onChange(block.id, (b) => ({
-                  ...b,
-                  config: { ...b.config, upiAmount: e.target.value },
-                }))
-              }
-              onBlur={() => onBlur(block.id)}
-              className="w-full border-b bg-transparent pb-1 text-sm opacity-80 outline-none focus:border-primary"
-            />
-          </div>
-        )}
-
         {showConfig && (
-          <div className="mt-4 space-y-4 rounded-md border border-border bg-muted/20 p-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-border pb-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase">
-                Block Settings
-              </span>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="flex items-center gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={block.config.required}
-                  onChange={(e) =>
-                    onChange(block.id, (b) => ({
-                      ...b,
-                      config: { ...b.config, required: e.target.checked },
-                    }))
-                  }
-                  onBlur={() => onBlur(block.id)}
-                />
-                Required field
+          <div className="mt-6 space-y-5 rounded-2xl border border-border bg-muted/30 p-5 animate-in fade-in zoom-in-95 duration-200">
+            <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] border-b border-border pb-2">Configuration</h4>
+            <div className="grid gap-6 md:grid-cols-2">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={block.config.required}
+                    onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, required: e.target.checked } }))}
+                    onBlur={() => onBlur(block.id)}
+                    className="h-5 w-5 rounded-md border-2 border-muted-foreground/20 accent-primary"
+                  />
+                </div>
+                <span className="text-xs font-bold text-foreground/80">Required Field</span>
               </label>
 
               {(block.type === "short_text" || block.type === "long_text") && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Validation
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase">Validation</label>
                   <select
                     value={block.config.validationType || ""}
-                    onChange={(e) =>
-                      onChange(block.id, (b) => ({
-                        ...b,
-                        config: {
-                          ...b.config,
-                          validationType: e.target.value || null,
-                        },
-                      }))
-                    }
+                    onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, validationType: e.target.value || null } }))}
                     onBlur={() => onBlur(block.id)}
-                    className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold outline-none"
                   >
                     <option value="">None</option>
-                    <option value="email">Email</option>
-                    <option value="number">Number</option>
-                    <option value="url">URL</option>
+                    <option value="email">Email Address</option>
+                    <option value="number">Numeric Only</option>
+                    <option value="url">Valid URL</option>
                   </select>
                 </div>
               )}
 
               {(block.type === "short_text" || block.type === "long_text") && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Max Length
-                  </label>
-                  <input
-                    type="number"
-                    value={block.config.maxLength || ""}
-                    onChange={(e) =>
-                      onChange(block.id, (b) => ({
-                        ...b,
-                        config: {
-                          ...b.config,
-                          maxLength: parseInt(e.target.value) || null,
-                        },
-                      }))
-                    }
-                    onBlur={() => onBlur(block.id)}
-                    className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                    placeholder="None"
-                  />
-                </div>
-              )}
-
-              {block.type === "dropdown" && (
-                <label className="flex items-center gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={block.config.allowMultiple}
-                    onChange={(e) =>
-                      onChange(block.id, (b) => ({
-                        ...b,
-                        config: {
-                          ...b.config,
-                          allowMultiple: e.target.checked,
-                        },
-                      }))
-                    }
-                    onBlur={() => onBlur(block.id)}
-                  />
-                  Allow multiple selection
-                </label>
-              )}
-
-              {!block.type.startsWith("h") && block.type !== "paragraph" && (
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Placeholder text
-                  </label>
-                  <input
-                    type="text"
-                    value={block.config.placeholder || ""}
-                    onChange={(e) =>
-                      onChange(block.id, (b) => ({
-                        ...b,
-                        config: { ...b.config, placeholder: e.target.value },
-                      }))
-                    }
-                    onBlur={() => onBlur(block.id)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-                    placeholder="Type your answer here..."
-                  />
-                </div>
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase">Min Length</label>
+                    <input
+                      type="number"
+                      value={block.config.minLength || ""}
+                      onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, minLength: parseInt(e.target.value) || null } }))}
+                      onBlur={() => onBlur(block.id)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase">Max Length</label>
+                    <input
+                      type="number"
+                      value={block.config.maxLength || ""}
+                      onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, maxLength: parseInt(e.target.value) || null } }))}
+                      onBlur={() => onBlur(block.id)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold outline-none"
+                      placeholder="∞"
+                    />
+                  </div>
+                </>
               )}
             </div>
           </div>
         )}
 
-        {isQuiz &&
-          !block.type.startsWith("h") &&
-          block.type !== "paragraph" && (
-            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-              <div className="flex items-center gap-2 rounded-md border border-emerald-500/20 bg-background px-2 py-1">
-                <Sparkles className="size-3 text-emerald-500" />
+        {isQuiz && !block.type.startsWith("h") && block.type !== "paragraph" && (
+          <div className="mt-6 flex flex-wrap items-center gap-4 rounded-2xl border-2 border-emerald-500/10 bg-emerald-500/5 p-4 animate-in slide-in-from-top-2">
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-background px-3 py-2">
+              <Sparkles className="size-4 text-emerald-500" />
+              <div className="space-y-0.5">
+                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Points</p>
                 <input
                   type="number"
                   value={block.config.points || 1}
-                  onChange={(e) =>
-                    onChange(block.id, (b) => ({
-                      ...b,
-                      config: {
-                        ...b.config,
-                        points: parseInt(e.target.value) || 0,
-                      },
-                    }))
-                  }
+                  onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, points: parseInt(e.target.value) || 0 } }))}
                   onBlur={() => onBlur(block.id)}
-                  className="w-10 bg-transparent text-xs font-bold text-emerald-700 outline-none"
-                  title="Points"
+                  className="w-12 bg-transparent text-sm font-black text-emerald-950 outline-none"
                 />
-                <span className="text-[10px] font-bold text-emerald-500 uppercase">
-                  pts
-                </span>
               </div>
+            </div>
 
-              <div className="flex items-center gap-2 rounded-md border border-emerald-500/20 bg-background px-2 py-1">
-                <Timer className="size-3 text-emerald-500" />
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-background px-3 py-2">
+              <Timer className="size-4 text-emerald-500" />
+              <div className="space-y-0.5">
+                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Time (sec)</p>
                 <input
                   type="number"
                   placeholder="∞"
                   value={block.config.timerSeconds || ""}
-                  onChange={(e) =>
-                    onChange(block.id, (b) => ({
-                      ...b,
-                      config: {
-                        ...b.config,
-                        timerSeconds: parseInt(e.target.value) || null,
-                      },
-                    }))
-                  }
+                  onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, timerSeconds: parseInt(e.target.value) || null } }))}
                   onBlur={() => onBlur(block.id)}
-                  className="w-10 bg-transparent text-xs font-bold text-emerald-700 outline-none"
-                  title="Timer (seconds)"
-                />
-                <span className="text-[10px] font-bold text-emerald-500 uppercase">
-                  sec
-                </span>
-              </div>
-
-              <div className="flex flex-1 items-center gap-2 rounded-md border border-emerald-500/20 bg-background px-2 py-1">
-                <CheckCircle2 className="size-3 text-emerald-500" />
-                <input
-                  type="text"
-                  placeholder="Correct answer..."
-                  value={block.config.correctAnswer || ""}
-                  onChange={(e) =>
-                    onChange(block.id, (b) => ({
-                      ...b,
-                      config: { ...b.config, correctAnswer: e.target.value },
-                    }))
-                  }
-                  onBlur={() => onBlur(block.id)}
-                  className="flex-1 bg-transparent text-xs font-medium text-emerald-900 outline-none placeholder:text-emerald-900/30"
+                  className="w-12 bg-transparent text-sm font-black text-emerald-950 outline-none"
                 />
               </div>
             </div>
-          )}
+
+            <div className="flex flex-1 items-center gap-3 rounded-xl border border-emerald-500/20 bg-background px-4 py-2">
+              <CheckCircle2 className="size-4 text-emerald-500" />
+              <div className="flex-1 space-y-0.5">
+                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Correct Answer</p>
+                <input
+                  type="text"
+                  placeholder="Type the exact answer..."
+                  value={block.config.correctAnswer || ""}
+                  onChange={(e) => onChange(block.id, (b) => ({ ...b, config: { ...b.config, correctAnswer: e.target.value } }))}
+                  onBlur={() => onBlur(block.id)}
+                  className="w-full bg-transparent text-sm font-bold text-emerald-950 outline-none placeholder:text-emerald-900/20"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {showLogic && (
-          <div className="mt-4 rounded-md border border-border bg-card p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground uppercase">
-                Logic & conditions
-              </span>
+          <div className="mt-6 rounded-2xl border border-border bg-card p-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="mb-4 flex items-center justify-between">
+              <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Conditional Logic</h4>
               <button
                 type="button"
                 onClick={addLogicRule}
-                className="text-xs text-primary hover:underline"
+                className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary hover:text-primary-foreground transition-all"
               >
-                + Add rule
+                + New Rule
               </button>
             </div>
             <div className="space-y-4">
               {(block.config.logic || []).map((rule: any, ruleIdx: number) => (
-                <div
-                  key={rule.id}
-                  className="rounded border border-border/50 bg-muted/20 p-3"
-                >
-                  <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+                <div key={rule.id} className="rounded-xl border border-border/50 bg-muted/20 p-4 relative group/rule">
+                  <div className="mb-4 flex flex-wrap items-center gap-3 text-xs font-bold">
                     <select
                       value={rule.action}
-                      onChange={(e) =>
-                        onChange(block.id, (b) => {
-                          const next = [...(b.config.logic || [])]
-                          next[ruleIdx] = {
-                            ...next[ruleIdx],
-                            action: e.target.value as "show" | "hide",
-                          }
-                          return { ...b, config: { ...b.config, logic: next } }
-                        })
-                      }
-                      className="h-7 rounded border border-input bg-background px-2 text-xs"
+                      onChange={(e) => onChange(block.id, (b) => {
+                        const next = [...(b.config.logic || [])]
+                        next[ruleIdx] = { ...next[ruleIdx], action: e.target.value as "show" | "hide" }
+                        return { ...b, config: { ...b.config, logic: next } }
+                      })}
+                      className="h-8 rounded-lg border border-border bg-background px-3 outline-none"
                     >
-                      <option value="show">Show</option>
-                      <option value="hide">Hide</option>
+                      <option value="show">Show Block</option>
+                      <option value="hide">Hide Block</option>
                     </select>
-                    <span>this block if</span>
+                    <span className="text-muted-foreground uppercase tracking-widest text-[9px]">if</span>
                     <select
                       value={rule.conditionMatch}
-                      onChange={(e) =>
-                        onChange(block.id, (b) => {
-                          const next = [...(b.config.logic || [])]
-                          next[ruleIdx] = {
-                            ...next[ruleIdx],
-                            conditionMatch: e.target.value as "all" | "any",
-                          }
-                          return { ...b, config: { ...b.config, logic: next } }
-                        })
-                      }
-                      className="h-7 rounded border border-input bg-background px-2 text-xs"
+                      onChange={(e) => onChange(block.id, (b) => {
+                        const next = [...(b.config.logic || [])]
+                        next[ruleIdx] = { ...next[ruleIdx], conditionMatch: e.target.value as "all" | "any" }
+                        return { ...b, config: { ...b.config, logic: next } }
+                      })}
+                      className="h-8 rounded-lg border border-border bg-background px-3 outline-none"
                     >
-                      <option value="all">all</option>
-                      <option value="any">any</option>
+                      <option value="all">ALL Conditions</option>
+                      <option value="any">ANY Condition</option>
                     </select>
-                    <span>of these conditions match:</span>
                     <div className="flex-1" />
                     <button
-                      onClick={() =>
-                        onChange(block.id, (b) => {
-                          const next = (b.config.logic || []).filter(
-                            (r: any) => r.id !== rule.id
-                          )
-                          return { ...b, config: { ...b.config, logic: next } }
-                        })
-                      }
-                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => onChange(block.id, (b) => {
+                        const next = (b.config.logic || []).filter((r: any) => r.id !== rule.id)
+                        return { ...b, config: { ...b.config, logic: next } }
+                      })}
+                      className="text-muted-foreground hover:text-destructive p-1 rounded-full hover:bg-destructive/10 transition-colors"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {rule.conditions.map((cond: any, condIdx: number) => (
-                      <div
-                        key={condIdx}
-                        className="flex flex-wrap items-center gap-2"
-                      >
+                      <div key={condIdx} className="flex flex-wrap items-center gap-3">
                         <select
                           value={cond.blockId}
-                          onChange={(e) =>
-                            onChange(block.id, (b) => {
+                          onChange={(e) => onChange(block.id, (b) => {
+                            const next = [...(b.config.logic || [])]
+                            const nextConds = [...next[ruleIdx].conditions]
+                            nextConds[condIdx] = { ...nextConds[condIdx], blockId: e.target.value }
+                            next[ruleIdx] = { ...next[ruleIdx], conditions: nextConds }
+                            return { ...b, config: { ...b.config, logic: next } }
+                          })}
+                          className="h-9 flex-1 min-w-[150px] rounded-xl border border-border bg-background px-3 text-xs font-bold outline-none"
+                        >
+                          <option value="">Select Target...</option>
+                          {allBlocks.filter((cand) => cand.id !== block.id).map((cand) => (
+                            <option key={cand.id} value={cand.id}>
+                              {cand.label || cand.type}
+                            </option>
+                          ))}
+                        </select>
+                        {(() => {
+                          const targetBlock = allBlocks.find(b => b.id === cond.blockId)
+                          const tType = targetBlock?.type || "short_text"
+                          const tValType = targetBlock?.config?.validationType
+
+                          let options = [
+                            <option key="equals" value="equals">equals</option>,
+                            <option key="not_equals" value="not_equals">not equals</option>,
+                            <option key="contains" value="contains">contains</option>,
+                            <option key="is_empty" value="is_empty">is empty</option>,
+                            <option key="is_not_empty" value="is_not_empty">is not empty</option>
+                          ]
+
+                          if (tType === "checkbox" || tType === "multiple_choice") {
+                            options = [
+                              <option key="equals" value="equals">is selected</option>,
+                              <option key="contains" value="contains">contains</option>,
+                              <option key="is_empty" value="is_empty">is empty</option>,
+                              <option key="is_not_empty" value="is_not_empty">is not empty</option>
+                            ]
+                          } else if (tType === "short_text" && tValType === "number") {
+                            options = [
+                              <option key="equals" value="equals">equals</option>,
+                              <option key="not_equals" value="not_equals">not equals</option>,
+                              <option key="greater_than" value="greater_than">greater than</option>,
+                              <option key="less_than" value="less_than">less than</option>,
+                              <option key="is_empty" value="is_empty">is empty</option>,
+                              <option key="is_not_empty" value="is_not_empty">is not empty</option>
+                            ]
+                          }
+
+                          return (
+                            <select
+                              value={cond.operator}
+                              onChange={(e) => onChange(block.id, (b) => {
+                                const next = [...(b.config.logic || [])]
+                                const nextConds = [...next[ruleIdx].conditions]
+                                nextConds[condIdx] = { ...nextConds[condIdx], operator: e.target.value as any }
+                                next[ruleIdx] = { ...next[ruleIdx], conditions: nextConds }
+                                return { ...b, config: { ...b.config, logic: next } }
+                              })}
+                              className="h-9 rounded-xl border border-border bg-background px-3 text-xs font-bold outline-none"
+                            >
+                              {options}
+                            </select>
+                          )
+                        })()}
+                        {cond.operator !== "is_empty" && cond.operator !== "is_not_empty" && (
+                          <input
+                            type="text"
+                            value={cond.value}
+                            onChange={(e) => onChange(block.id, (b) => {
                               const next = [...(b.config.logic || [])]
                               const nextConds = [...next[ruleIdx].conditions]
-                              nextConds[condIdx] = {
-                                ...nextConds[condIdx],
-                                blockId: e.target.value,
-                              }
-                              next[ruleIdx] = {
-                                ...next[ruleIdx],
-                                conditions: nextConds,
-                              }
-                              return {
-                                ...b,
-                                config: { ...b.config, logic: next },
-                              }
-                            })
-                          }
-                          className="h-7 rounded border border-input bg-background px-2 text-xs"
-                        >
-                          <option value="">Select block...</option>
-                          {allBlocks
-                            .filter((cand) => cand.id !== block.id)
-                            .map((cand) => (
-                              <option key={cand.id} value={cand.id}>
-                                {cand.label || cand.type}
-                              </option>
-                            ))}
-                        </select>
-                        <select
-                          value={cond.operator}
-                          onChange={(e) =>
-                            onChange(block.id, (b) => {
-                              const next = [...(b.config.logic || [])]
-                              const nextConds = [...next[ruleIdx].conditions]
-                              nextConds[condIdx] = {
-                                ...nextConds[condIdx],
-                                operator: e.target.value as any,
-                              }
-                              next[ruleIdx] = {
-                                ...next[ruleIdx],
-                                conditions: nextConds,
-                              }
-                              return {
-                                ...b,
-                                config: { ...b.config, logic: next },
-                              }
-                            })
-                          }
-                          className="h-7 rounded border border-input bg-background px-2 text-xs"
-                        >
-                          <option value="equals">equals</option>
-                          <option value="not_equals">not equals</option>
-                          <option value="contains">contains</option>
-                          <option value="is_empty">is empty</option>
-                          <option value="is_not_empty">is not empty</option>
-                        </select>
-                        {cond.operator !== "is_empty" &&
-                          cond.operator !== "is_not_empty" && (
-                            <input
-                              type="text"
-                              value={cond.value}
-                              onChange={(e) =>
-                                onChange(block.id, (b) => {
-                                  const next = [...(b.config.logic || [])]
-                                  const nextConds = [
-                                    ...next[ruleIdx].conditions,
-                                  ]
-                                  nextConds[condIdx] = {
-                                    ...nextConds[condIdx],
-                                    value: e.target.value,
-                                  }
-                                  next[ruleIdx] = {
-                                    ...next[ruleIdx],
-                                    conditions: nextConds,
-                                  }
-                                  return {
-                                    ...b,
-                                    config: { ...b.config, logic: next },
-                                  }
-                                })
-                              }
-                              placeholder="Value..."
-                              className="h-7 rounded border border-input bg-background px-2 text-xs"
-                            />
-                          )}
+                              nextConds[condIdx] = { ...nextConds[condIdx], value: e.target.value }
+                              next[ruleIdx] = { ...next[ruleIdx], conditions: nextConds }
+                              return { ...b, config: { ...b.config, logic: next } }
+                            })}
+                            placeholder="Match value..."
+                            className="h-9 rounded-xl border border-border bg-background px-3 text-xs font-bold outline-none flex-1 min-w-[100px]"
+                          />
+                        )}
                         {rule.conditions.length > 1 && (
                           <button
-                            onClick={() =>
-                              onChange(block.id, (b) => {
-                                const next = [...(b.config.logic || [])]
-                                const nextConds = next[
-                                  ruleIdx
-                                ].conditions.filter(
-                                  (_: any, i: number) => i !== condIdx
-                                )
-                                next[ruleIdx] = {
-                                  ...next[ruleIdx],
-                                  conditions: nextConds,
-                                }
-                                return {
-                                  ...b,
-                                  config: { ...b.config, logic: next },
-                                }
-                              })
-                            }
-                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => onChange(block.id, (b) => {
+                              const next = [...(b.config.logic || [])]
+                              const nextConds = next[ruleIdx].conditions.filter((_: any, i: number) => i !== condIdx)
+                              next[ruleIdx] = { ...next[ruleIdx], conditions: nextConds }
+                              return { ...b, config: { ...b.config, logic: next } }
+                            })}
+                            className="text-muted-foreground hover:text-destructive p-1 rounded-full hover:bg-destructive/10 transition-colors"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <X className="h-3 w-3" />
                           </button>
                         )}
                       </div>
                     ))}
                     <button
-                      onClick={() =>
-                        onChange(block.id, (b) => {
-                          const next = [...(b.config.logic || [])]
-                          const nextConds = [
-                            ...next[ruleIdx].conditions,
-                            {
-                              blockId: "",
-                              operator: "equals" as const,
-                              value: "",
-                            },
-                          ]
-                          next[ruleIdx] = {
-                            ...next[ruleIdx],
-                            conditions: nextConds,
-                          }
-                          return { ...b, config: { ...b.config, logic: next } }
-                        })
-                      }
-                      className="text-xs text-primary hover:underline"
+                      onClick={() => onChange(block.id, (b) => {
+                        const next = [...(b.config.logic || [])]
+                        const nextConds = [...next[ruleIdx].conditions, { blockId: "", operator: "equals" as const, value: "" }]
+                        next[ruleIdx] = { ...next[ruleIdx], conditions: nextConds }
+                        return { ...b, config: { ...b.config, logic: next } }
+                      })}
+                      className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline ml-1"
                     >
                       + Add condition
                     </button>
@@ -794,9 +649,7 @@ export default function FormEditorPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [presence, setPresence] = React.useState<PresenceUser[]>([])
-  const [cursors, setCursors] = React.useState<
-    Record<string, { x: number; y: number }>
-  >({})
+  const [cursors, setCursors] = React.useState<Record<string, { x: number; y: number }>>({})
 
   const canvasRef = React.useRef<HTMLDivElement | null>(null)
 
@@ -809,47 +662,24 @@ export default function FormEditorPage() {
   const [isQuizDraft, setIsQuizDraft] = React.useState(false)
   const [leaderboard, setLeaderboard] = React.useState<any[]>([])
   const [expiresAtDraft, setExpiresAtDraft] = React.useState("")
-  const [activeTab, setActiveTab] = React.useState<
-    "editor" | "settings" | "leaderboard" | "submissions"
-  >("editor")
+  const [activeTab, setActiveTab] = React.useState<"editor" | "submissions" | "leaderboard">("editor")
+  const [sidebarTab, setSidebarTab] = React.useState<"setup" | "ai" | "theme">("setup")
   const [isPreview, setIsPreview] = React.useState(false)
   const [isPresentation, setIsPresentation] = React.useState(false)
   const [submissions, setSubmissions] = React.useState<any[]>([])
   const [subsLoading, setSubsLoading] = React.useState(false)
   const [isCopied, setIsCopied] = React.useState(false)
   const [socketConnected, setSocketConnected] = React.useState(false)
+  const [aiPrompt, setAiPrompt] = React.useState("")
+  const [isGeneratingAi, setIsGeneratingAi] = React.useState(false)
+  const [customCss, setCustomCss] = React.useState("")
+  
   const socketRef = React.useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
-  // Auto-switch away from leaderboard if quiz mode disabled
-  React.useEffect(() => {
-    if (!isQuizDraft && activeTab === "leaderboard") {
-      setActiveTab("editor")
-    }
-  }, [isQuizDraft, activeTab])
-
-  const copyPublicUrl = () => {
-    const baseUrl = window.location.origin
-    const url = form?.slug
-      ? `${baseUrl}/${form.organization_slug}/${form.slug}`
-      : `${baseUrl}/f/${form?.id}`
-
-    navigator.clipboard.writeText(url)
-    setIsCopied(true)
-    setTimeout(() => setIsCopied(false), 2000)
-  }
-
-  const [savingMeta, setSavingMeta] = React.useState(false)
-
   const blocks = form?.schema_snapshot.blocks ?? []
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    })
-  )
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const [activeId, setActiveId] = React.useState<string | null>(null)
 
   const loadSubmissions = React.useCallback(async () => {
@@ -864,33 +694,28 @@ export default function FormEditorPage() {
     }
   }, [formId])
 
+  const exportCsv = () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+    window.open(`${API_BASE}/forms/${formId}/export/csv`, "_blank")
+  }
+
   const deleteForm = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this form? This will remove all submissions and events permanently."
-      )
-    ) {
-      return
-    }
+    if (!confirm("Are you sure? This cannot be undone.")) return
     try {
       await apiFetch(`/forms/${formId}`, { method: "DELETE" })
       router.push("/dashboard")
     } catch (e) {
-      alert("Failed to delete form")
+      alert("Failed to delete")
     }
   }
 
-  const exportCsv = () => {
-    const API_BASE =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-    window.open(`${API_BASE}/forms/${formId}/export/csv`, "_blank")
+  const copyPublicUrl = () => {
+    const baseUrl = window.location.origin
+    const url = form?.slug ? `${baseUrl}/${form.organization_slug}/${form.slug}` : `${baseUrl}/f/${form?.id}`
+    navigator.clipboard.writeText(url)
+    setIsCopied(true)
+    setTimeout(() => setIsCopied(false), 2000)
   }
-
-  React.useEffect(() => {
-    if (activeTab === "submissions") {
-      loadSubmissions()
-    }
-  }, [activeTab, loadSubmissions])
 
   const hydrateForm = React.useCallback((nextForm: FormRecord) => {
     setForm(nextForm)
@@ -901,11 +726,7 @@ export default function FormEditorPage() {
     setSlugDraft(nextForm.slug || "")
     setRedirectUrlDraft(nextForm.redirect_url || "")
     setIsQuizDraft(nextForm.is_quiz || false)
-    setExpiresAtDraft(
-      nextForm.expires_at
-        ? new Date(nextForm.expires_at).toISOString().slice(0, 16)
-        : ""
-    )
+    setExpiresAtDraft(nextForm.expires_at ? new Date(nextForm.expires_at).toISOString().slice(0, 16) : "")
   }, [])
 
   const loadForm = React.useCallback(async () => {
@@ -914,164 +735,63 @@ export default function FormEditorPage() {
       hydrateForm(nextForm)
       setError(null)
     } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Could not load form"
-      )
+      setError(loadError instanceof Error ? loadError.message : "Could not load form")
     } finally {
       setLoading(false)
     }
   }, [formId, hydrateForm])
 
-  React.useEffect(() => {
-    void loadForm()
-  }, [loadForm])
+  React.useEffect(() => { void loadForm() }, [loadForm])
 
   const connectWebSocket = React.useCallback(() => {
     if (!formId) return
-
-    if (socketRef.current) {
-      socketRef.current.close()
-    }
-
+    if (socketRef.current) socketRef.current.close()
     const ws = new WebSocket(`${getWsBaseUrl()}/forms/${formId}/ws`)
     socketRef.current = ws
-
-    ws.onopen = () => {
-      setSocketConnected(true)
-      setError(null)
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-        reconnectTimeoutRef.current = null
-      }
-    }
-
-    ws.onclose = () => {
-      setSocketConnected(false)
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connectWebSocket()
-      }, 3000)
-    }
-
-    ws.onerror = () => {
-      ws.close()
-    }
-
+    ws.onopen = () => { setSocketConnected(true); setError(null) }
+    ws.onclose = () => { setSocketConnected(false); reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000) }
+    ws.onerror = () => ws.close()
     ws.onmessage = (event) => {
       const incoming = JSON.parse(event.data) as WsIncoming
-
-      if (incoming.type === "PRESENCE_SNAPSHOT") {
-        setPresence(incoming.users)
-        return
-      }
-
-      if (incoming.type === "CURSOR_JOIN") {
-        setPresence((current) => {
-          const withoutUser = current.filter(
-            (item) => item.userId !== incoming.user.userId
-          )
-          return [...withoutUser, incoming.user]
-        })
-        return
-      }
-
-      if (incoming.type === "CURSOR_LEAVE") {
-        setPresence((current) =>
-          current.filter((item) => item.userId !== incoming.userId)
-        )
-        return
-      }
-
-      if (incoming.type === "CURSOR_MOVE") {
-        setCursors((current) => ({
-          ...current,
-          [incoming.userId]: { x: incoming.x, y: incoming.y },
-        }))
-        return
-      }
-
-      if (incoming.type === "FORM_EVENT") {
-        setForm((current) => {
-          if (!current) return current
-          return {
-            ...current,
-            schema_snapshot: applyFormEvent(
-              current.schema_snapshot,
-              incoming.payload
-            ),
-          }
-        })
-      }
-
-      if (incoming.type === "SCORE_UPDATE") {
-        setLeaderboard((current) => {
-          const withoutSub = current.filter(
-            (s) => s.id !== incoming.submission.id
-          )
-          return [...withoutSub, incoming.submission].sort(
-            (a, b) => b.score - a.score
-          )
-        })
-      }
+      if (incoming.type === "PRESENCE_SNAPSHOT") setPresence(incoming.users)
+      else if (incoming.type === "CURSOR_JOIN") setPresence((current) => [...current.filter(u => u.userId !== incoming.user.userId), incoming.user])
+      else if (incoming.type === "CURSOR_LEAVE") setPresence((current) => current.filter(u => u.userId !== incoming.userId))
+      else if (incoming.type === "CURSOR_MOVE") setCursors((curr) => ({ ...curr, [incoming.userId]: { x: incoming.x, y: incoming.y } }))
+      else if (incoming.type === "EVENT_APPLIED") setForm((curr) => curr ? { ...curr, schema_snapshot: applyFormEvent(curr.schema_snapshot, incoming.formEvent) } : curr)
+      else if (incoming.type === "SCORE_UPDATE") setLeaderboard((curr) => [...curr.filter(s => s.id !== incoming.submission.id), incoming.submission].sort((a, b) => b.score - a.score))
     }
   }, [formId])
 
   React.useEffect(() => {
     connectWebSocket()
-    return () => {
-      if (socketRef.current) socketRef.current.close()
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current)
-    }
+    return () => { socketRef.current?.close(); if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current) }
   }, [connectWebSocket])
 
   const persistEvent = async (event: FormEventPayload) => {
-    try {
-      await apiFetch(`/forms/${formId}/events`, {
-        method: "POST",
-        body: JSON.stringify(event),
-      })
-    } catch (e) {
-      console.error("Event failed", e)
-    }
+    setForm((curr) => curr ? { ...curr, schema_snapshot: applyFormEvent(curr.schema_snapshot, event) } : curr)
+    try { await apiFetch(`/forms/${formId}/events`, { method: "POST", body: JSON.stringify(event) }) } catch (e) { console.error(e) }
   }
 
-  const onBlockChange = React.useCallback(
-    (id: string, updater: (b: FormBlock) => FormBlock) => {
-      setForm((current) => {
-        if (!current) return current
-        return {
-          ...current,
-          schema_snapshot: {
-            blocks: current.schema_snapshot.blocks.map((block) =>
-              block.id === id ? updater(block) : block
-            ),
-          },
-        }
-      })
-    },
-    []
-  )
-
-  const persistBlock = React.useCallback(
-    async (id: string) => {
-      const block = form?.schema_snapshot.blocks.find(
-        (candidate) => candidate.id === id
-      )
-      if (!block) {
-        return
+  const blockSaveTimers = React.useRef<Record<string, NodeJS.Timeout>>({})
+  const onBlockChange = React.useCallback((id: string, updater: (b: FormBlock) => FormBlock) => {
+    setForm((curr) => {
+      if (!curr) return curr
+      const newBlocks = curr.schema_snapshot.blocks.map(b => b.id === id ? updater(b) : b)
+      const updatedBlock = newBlocks.find(b => b.id === id)
+      if (updatedBlock) {
+        if (blockSaveTimers.current[id]) clearTimeout(blockSaveTimers.current[id])
+        blockSaveTimers.current[id] = setTimeout(() => { persistEvent({ event_type: "UPDATE_BLOCK", payload: { id, block: updatedBlock } }) }, 500)
       }
+      return { ...curr, schema_snapshot: { blocks: newBlocks } }
+    })
+  }, [persistEvent])
 
-      await persistEvent({
-        event_type: "UPDATE_BLOCK",
-        payload: { id, block },
-      })
-    },
-    [form, persistEvent]
-  )
+  const persistBlock = React.useCallback(async (id: string) => {
+    const block = form?.schema_snapshot.blocks.find(b => b.id === id)
+    if (block) await persistEvent({ event_type: "UPDATE_BLOCK", payload: { id, block } })
+  }, [form, persistEvent])
 
   const saveMeta = React.useCallback(async () => {
-    setSavingMeta(true)
-    setError(null)
-
     const eventPayload: FormEventPayload = {
       event_type: "UPDATE_FORM_META",
       payload: {
@@ -1082,888 +802,280 @@ export default function FormEditorPage() {
         slug: slugDraft,
         redirect_url: redirectUrlDraft || null,
         is_quiz: isQuizDraft,
-        expires_at: expiresAtDraft
-          ? new Date(expiresAtDraft).toISOString()
-          : null,
+        custom_css: customCss || null,
+        expires_at: expiresAtDraft ? new Date(expiresAtDraft).toISOString() : null,
       },
     }
+    await persistEvent(eventPayload)
+    toast.success("Saved!")
+  }, [nameDraft, descriptionDraft, publishedDraft, themeDraft, slugDraft, redirectUrlDraft, isQuizDraft, expiresAtDraft, persistEvent])
 
-    try {
-      await persistEvent(eventPayload)
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Failed to save form metadata"
-      )
-    } finally {
-      setSavingMeta(false)
-    }
-  }, [
-    descriptionDraft,
-    nameDraft,
-    persistEvent,
-    publishedDraft,
-    themeDraft,
-    slugDraft,
-    redirectUrlDraft,
-    isQuizDraft,
-    expiresAtDraft,
-  ])
-
-  const pushCursor = React.useCallback(
-    (e: React.MouseEvent) => {
-      if (!canvasRef.current || !socketRef.current || !socketConnected) return
-      const rect = canvasRef.current.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      socketRef.current.send(JSON.stringify({ type: "CURSOR_MOVE", x, y }))
-    },
-    [socketConnected]
-  )
+  const pushCursor = React.useCallback((e: React.MouseEvent) => {
+    if (!canvasRef.current || !socketRef.current || !socketConnected) return
+    const rect = canvasRef.current.getBoundingClientRect()
+    socketRef.current.send(JSON.stringify({ type: "CURSOR_MOVE", x: e.clientX - rect.left, y: e.clientY - rect.top }))
+  }, [socketConnected])
 
   const addBlock = async (index?: number) => {
-    const newBlock: FormBlock = {
-      id: crypto.randomUUID(),
-      type: "short_text",
-      label: "",
-      config: { required: false },
-    }
-
-    await persistEvent({
-      event_type: "ADD_BLOCK",
-      payload: { block: newBlock, index },
-    })
+    const newBlock: FormBlock = { id: `q_${Math.random().toString(36).substring(2, 7)}`, type: "short_text", label: "", config: { required: false } }
+    await persistEvent({ event_type: "ADD_BLOCK", payload: { block: newBlock, index } })
   }
 
-  const removeBlock = async (id: string) => {
-    await persistEvent({
-      event_type: "REMOVE_BLOCK",
-      payload: { id },
-    })
-  }
+  const removeBlock = async (id: string) => { await persistEvent({ event_type: "REMOVE_BLOCK", payload: { id } }) }
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string)
-  }
-
+  const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string)
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     setActiveId(null)
-
     if (over && active.id !== over.id) {
-      const oldIndex = blocks.findIndex((b) => b.id === active.id)
-      const newIndex = blocks.findIndex((b) => b.id === over.id)
-      const newOrder = arrayMove(blocks, oldIndex, newIndex).map((b) => b.id)
-
-      await persistEvent({
-        event_type: "REORDER_BLOCKS",
-        payload: { order: newOrder },
-      })
+      if (active.data?.current?.isNew) {
+        const newBlock = { id: `q_${Math.random().toString(36).substring(2, 7)}`, type: active.data.current.type as string, label: "", config: { required: false } }
+        const overIndex = blocks.findIndex((b) => b.id === over.id)
+        await persistEvent({ event_type: "ADD_BLOCK", payload: { block: newBlock, index: overIndex !== -1 ? overIndex : blocks.length } })
+      } else {
+        const oldIndex = blocks.findIndex((b) => b.id === active.id)
+        const newIndex = over.id === "canvas-root" ? blocks.length - 1 : blocks.findIndex((b) => b.id === over.id)
+        if (oldIndex !== -1 && newIndex !== -1) await persistEvent({ event_type: "REORDER_BLOCKS", payload: { order: arrayMove(blocks, oldIndex, newIndex).map(b => b.id) } })
+      }
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+  const handleGenerateAi = async () => {
+    if (!aiPrompt) return
+    setIsGeneratingAi(true)
+    try {
+      const res = await apiFetch<{ blocks: FormBlock[] }>("/ai/generate", {
+        method: "POST",
+        body: JSON.stringify({ prompt: aiPrompt })
+      })
+      if (res.blocks) {
+        // Bulk apply events or just a special EVENT_TYPE
+        await persistEvent({ event_type: "REORDER_BLOCKS", payload: { order: [] } }) // Clear current? 
+        // For now let's just add them one by one or create a new event type
+        for (const b of res.blocks) {
+          await persistEvent({ event_type: "ADD_BLOCK", payload: { block: b } })
+        }
+        toast.success("AI Generation complete!")
+        setAiPrompt("")
+      }
+    } catch (e) {
+      toast.error("AI Generation failed")
+    } finally {
+      setIsGeneratingAi(false)
+    }
   }
 
-  if (error && !form) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-center">
-        <div className="mb-4 rounded-full bg-destructive/10 p-3 text-destructive">
-          <Trash2 className="h-6 w-6" />
-        </div>
-        <h1 className="text-xl font-bold">Form error</h1>
-        <p className="mt-2 text-muted-foreground">{error}</p>
-        <Button
-          onClick={() => router.push("/dashboard")}
-          variant="outline"
-          className="mt-6"
-        >
-          Back to dashboard
-        </Button>
-      </div>
-    )
-  }
+  if (loading) return <div className="flex h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  if (error && !form) return <div className="flex h-screen flex-col items-center justify-center bg-background p-6 text-center"><h1 className="text-xl font-bold">Error</h1><p className="mt-2 text-muted-foreground">{error}</p></div>
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-10">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <Button asChild variant="ghost" className="mb-2 rounded-[8px] px-2">
-              <Link href="/dashboard">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to dashboard
-              </Link>
-            </Button>
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-semibold tracking-tight">
-                Edit Form
-              </h1>
-              <div className="flex rounded-lg bg-muted p-1">
-                <button
-                  onClick={() => setActiveTab("editor")}
-                  className={`rounded-md px-3 py-1 text-sm font-medium ${activeTab === "editor" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Editor
-                </button>
-                <button
-                  onClick={() => setActiveTab("settings")}
-                  className={`rounded-md px-3 py-1 text-sm font-medium ${activeTab === "settings" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Settings
-                </button>
-                {isQuizDraft && (
-                  <button
-                    onClick={() => setActiveTab("leaderboard")}
-                    className={`rounded-md px-3 py-1 text-sm font-medium ${activeTab === "leaderboard" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    Leaderboard
-                  </button>
-                )}
-                <button
-                  onClick={() => setActiveTab("submissions")}
-                  className={`rounded-md px-3 py-1 text-sm font-medium ${activeTab === "submissions" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  Submissions
-                </button>
-              </div>
-            </div>
+    <main className="flex h-screen flex-col overflow-hidden bg-background">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="ghost" size="sm" className="rounded-full px-2">
+            <Link href="/dashboard"><ArrowLeft className="h-4 w-4" /></Link>
+          </Button>
+          <div className="h-6 w-px bg-border mx-2" />
+          <h1 className="text-xl font-black tracking-tight truncate max-w-[200px]">{nameDraft || "Untitled"}</h1>
+          <div className="flex rounded-lg bg-muted p-1 ml-4 ring-1 ring-border shadow-inner">
+            <button onClick={() => setActiveTab("editor")} className={cn("rounded-md px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === "editor" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground")}>Editor</button>
+            <button onClick={() => setActiveTab("submissions")} className={cn("rounded-md px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === "submissions" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground")}>Submissions</button>
+            {isQuizDraft && <button onClick={() => setActiveTab("leaderboard")} className={cn("rounded-md px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === "leaderboard" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground")}>Board</button>}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyPublicUrl}
-              className="hidden rounded-[8px] sm:flex"
-            >
-              {isCopied ? (
-                <>
-                  <Check className="mr-2 h-4 w-4 text-emerald-500" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy Link
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPreview(true)}
-              className="rounded-[8px]"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </Button>
-            <ThemeToggle />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2 mr-4">
+            {presence.slice(0, 3).map((u) => (
+              <div key={u.userId} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-[10px] font-black text-white ring-4 ring-primary/5" style={{ backgroundColor: u.color }} title={u.label}>{u.initials}</div>
+            ))}
           </div>
-        </header>
+          <Button variant="outline" size="sm" onClick={copyPublicUrl} className="hidden rounded-full sm:flex h-9 font-bold px-5">
+            {isCopied ? <Check className="h-3 w-3 text-emerald-500 mr-2" /> : <Copy className="h-3 w-3 mr-2" />}
+            Copy Link
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsPreview(true)} className="rounded-full h-9 font-bold px-5"><Eye className="h-3 w-3 mr-2" />Preview</Button>
+          <div className="h-6 w-px bg-border mx-1" />
+          <ThemeToggle />
+        </div>
+      </header>
 
-        {error ? (
-          <div className="mb-4 rounded-[10px] border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
-          </div>
-        ) : null}
-
-        {isPreview && (
-          <FormPreview
-            form={{
-              ...form!,
-              name: nameDraft,
-              description: descriptionDraft,
-              theme: themeDraft,
-              schema_snapshot: { blocks },
-              is_quiz: isQuizDraft,
-              redirect_url: redirectUrlDraft || null,
-            }}
-            onClose={() => setIsPreview(false)}
-          />
-        )}
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+      <div className="flex flex-1 overflow-hidden">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {activeTab === "editor" && (
-            <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-              <div
-                ref={canvasRef}
-                onMouseMove={pushCursor}
-                className="relative rounded-[12px] border border-border bg-card p-5 shadow-sm"
-              >
-                {Object.entries(cursors).map(([id, pos]) => {
-                  const user = presence.find((u) => u.userId === id)
-                  if (!user) return null
-                  return (
-                    <div
-                      key={id}
-                      className="pointer-events-none absolute z-50 transition-all duration-75 ease-out"
-                      style={{
-                        left: pos.x,
-                        top: pos.y,
-                        color: user.color,
-                      }}
-                    >
-                      <MousePointer2 className="h-4 w-4 fill-current" />
-                      <div className="mt-1 rounded-sm bg-current px-1 py-0.5 text-[8px] font-bold text-white uppercase">
-                        {user.initials}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                <div className="mb-8 flex items-center justify-between gap-3 border-b border-border pb-4">
-                  <div>
-                    <p className="text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
-                      Form metadata
-                    </p>
-                    <h2 className="mt-1 text-xl font-semibold">{nameDraft}</h2>
-                  </div>
-                  <Button
-                    onClick={saveMeta}
-                    disabled={savingMeta}
-                    size="sm"
-                    className="rounded-[8px]"
-                  >
-                    {savingMeta ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="mr-2 h-4 w-4" />
-                    )}
-                    Save details
-                  </Button>
-                </div>
-
-                <div className="mb-8 grid gap-4 sm:grid-cols-[1fr_auto]">
-                  <input
-                    value={nameDraft}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    onBlur={saveMeta}
-                    placeholder="Untitled form"
-                    className="h-10 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
-                  />
-                  <label className="flex h-10 items-center gap-2 rounded-[8px] border border-input bg-background px-3 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={publishedDraft}
-                      onChange={(e) => {
-                        setPublishedDraft(e.target.checked)
-                        // Trigger immediate save for publish status
-                        const eventPayload: FormEventPayload = {
-                          event_type: "UPDATE_FORM_META",
-                          payload: {
-                            name: nameDraft,
-                            description: descriptionDraft || null,
-                            is_published: e.target.checked,
-                            theme: themeDraft,
-                            slug: slugDraft,
-                            redirect_url: redirectUrlDraft || null,
-                            is_quiz: isQuizDraft,
-                            expires_at: expiresAtDraft
-                              ? new Date(expiresAtDraft).toISOString()
-                              : null,
-                          },
-                        }
-                        persistEvent(eventPayload)
-                      }}
-                    />
-                    Published
-                  </label>
-                </div>
-
-                <textarea
-                  value={descriptionDraft}
-                  onChange={(e) => setDescriptionDraft(e.target.value)}
-                  onBlur={saveMeta}
-                  placeholder="Description..."
-                  rows={2}
-                  className="mb-8 w-full resize-none rounded-[8px] border border-input bg-background p-3 text-sm transition outline-none focus:border-ring"
-                />
-
-                <div className="flex items-center justify-between border-t border-border pt-6">
-                  <h3 className="text-lg font-semibold tracking-tight">
-                    Blocks
-                  </h3>
-                  <Button
-                    onClick={() => addBlock()}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-[8px]"
-                  >
-                    <FilePlus2 className="mr-2 h-4 w-4" />
-                    Add block
-                  </Button>
-                </div>
-
-                <div className="mt-4 space-y-3 pb-8 md:pl-12" id="canvas">
-                  <SortableContext
-                    items={blocks.map((b) => b.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {blocks.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center">
-                        <div className="rounded-full bg-muted p-3">
-                          <Plus className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <p className="mt-4 text-sm font-medium text-muted-foreground">
-                          No blocks yet. Drag from the right or click "Add
-                          block"
-                        </p>
-                      </div>
-                    ) : (
-                      blocks.map((b) => (
-                        <BlockItem
-                          key={b.id}
-                          block={b}
-                          allBlocks={blocks}
-                          isQuiz={isQuizDraft}
-                          addBlockBase={addBlock}
-                          onChange={onBlockChange}
-                          onBlur={persistBlock}
-                          onRemove={removeBlock}
-                        />
-                      ))
-                    )}
-                  </SortableContext>
-                </div>
-              </div>
-
-              <aside className="space-y-6">
-                <div className="rounded-[12px] border border-border bg-card p-5 shadow-sm">
-                  <div className="mb-4 flex items-center gap-2 border-b border-border pb-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold tracking-wider uppercase">
-                      Live collaborators
-                    </h3>
-                  </div>
-                  <div className="space-y-2">
-                    {presence.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        No other active editors.
-                      </p>
-                    ) : (
-                      presence.map((u) => (
-                        <div
-                          key={u.userId}
-                          className="flex items-center justify-between rounded-md border border-border/50 bg-muted/20 px-3 py-2"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold text-white uppercase"
-                              style={{ backgroundColor: u.color }}
-                            >
-                              {u.initials}
-                            </div>
-                            <span className="text-xs font-medium">
-                              {u.userId.slice(0, 8)}
-                            </span>
-                          </div>
-                          <span className="flex items-center gap-1 text-[10px] text-emerald-500">
-                            <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
-                            online
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-[12px] border border-border bg-card p-5 shadow-sm">
-                  <div className="mb-4 flex items-center gap-2 border-b border-border pb-3">
-                    <Component className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold tracking-wider uppercase">
-                      Form Elements
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    <DraggableSidebarItem
-                      type="short_text"
-                      label="Text Question"
-                      icon={X}
-                    />
-                    <DraggableSidebarItem
-                      type="checkbox"
-                      label="Checkbox Question"
-                      icon={Check}
-                    />
-                    <DraggableSidebarItem
-                      type="multiple_choice"
-                      label="Multiple Choice"
-                      icon={List}
-                    />
-                    <DraggableSidebarItem
-                      type="dropdown"
-                      label="Dropdown"
-                      icon={List}
-                    />
-                    <DraggableSidebarItem
-                      type="date_picker"
-                      label="Date Picker"
-                      icon={Check}
-                    />
-                    <DraggableSidebarItem
-                      type="rating"
-                      label="Rating"
-                      icon={Check}
-                    />
-                    <DraggableSidebarItem
-                      type="file_upload"
-                      label="File Upload"
-                      icon={Component}
-                    />
-                    <DraggableSidebarItem
-                      type="upi_payment"
-                      label="UPI Payment"
-                      icon={Component}
-                    />
-                  </div>
+            <>
+              <aside className="w-72 shrink-0 border-r border-border bg-card/30 flex flex-col">
+                <div className="p-5 border-b border-border bg-muted/20"><h3 className="text-[10px] font-black tracking-[0.2em] text-muted-foreground uppercase flex items-center gap-2"><LayoutGrid className="size-3" /> Toolset</h3></div>
+                <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                  <DraggableSidebarItem type="short_text" label="Short Answer" icon={X} />
+                  <DraggableSidebarItem type="long_text" label="Long Answer" icon={List} />
+                  <DraggableSidebarItem type="checkbox" label="Checkboxes" icon={Check} />
+                  <DraggableSidebarItem type="multiple_choice" label="Multiple Choice" icon={List} />
+                  <DraggableSidebarItem type="dropdown" label="Dropdown" icon={List} />
+                  <DraggableSidebarItem type="date_picker" label="Date Selection" icon={Calendar} />
+                  <DraggableSidebarItem type="rating" label="Rating Scale" icon={Star} />
+                  <DraggableSidebarItem type="file_upload" label="File Upload" icon={Upload} />
+                  <DraggableSidebarItem type="upi_payment" label="UPI Payment" icon={CreditCard} />
                 </div>
               </aside>
-            </section>
-          )}
 
-          {activeTab === "settings" && (
-            <div className="max-w-2xl space-y-6 rounded-[12px] border border-border bg-card p-6 shadow-sm">
-              <div className="border-b border-border pb-4">
-                <h3 className="text-lg font-semibold">Form Link & Access</h3>
-              </div>
+              <div className="flex-1 overflow-y-auto bg-muted/5 p-12 scroll-smooth" ref={canvasRef} onMouseMove={pushCursor}>
+                <div className="mx-auto max-w-3xl space-y-8 pb-40">
+                  {Object.entries(cursors).map(([id, pos]) => {
+                    const user = presence.find(u => u.userId === id); if (!user) return null;
+                    return <div key={id} className="pointer-events-none absolute z-50 transition-all duration-75 ease-out" style={{ left: pos.x, top: pos.y, color: user.color }}><MousePointer2 className="h-4 w-4 fill-current" /></div>
+                  })}
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Public URL
-                  </label>
-                  <div className="mt-1 flex gap-2">
-                    <input
-                      readOnly
-                      value={
-                        form?.slug
-                          ? `${window.location.origin}/${form.organization_slug}/${form.slug}`
-                          : `${window.location.origin}/f/${form?.id}`
-                      }
-                      className="flex-1 rounded-md border border-input bg-muted px-3 py-2 text-sm"
-                    />
-                    <Button onClick={copyPublicUrl} variant="outline">
-                      Copy
+                  <div className="rounded-[32px] border border-border bg-background p-12 shadow-2xl shadow-foreground/5 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
+                    <input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} onBlur={saveMeta} className="w-full bg-transparent text-5xl font-black tracking-tighter outline-none placeholder:text-muted-foreground/10 mb-4" placeholder="Untitled Project" />
+                    <textarea value={descriptionDraft} onChange={(e) => setDescriptionDraft(e.target.value)} onBlur={saveMeta} className="w-full bg-transparent text-xl text-muted-foreground outline-none placeholder:text-muted-foreground/10 resize-none h-auto" placeholder="Briefly describe this form..." rows={1} />
+                  </div>
+
+                  <DroppableCanvas>
+                    <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                      {blocks.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-[40px] border-4 border-dashed border-border/50 py-40 text-center bg-background/20 backdrop-blur-sm">
+                          <div className="rounded-3xl bg-muted p-6 mb-8"><Plus className="h-12 w-12 text-muted-foreground/30" /></div>
+                          <p className="text-3xl font-black tracking-tight">Empty Canvas</p>
+                          <p className="mt-2 text-muted-foreground max-w-xs mx-auto font-medium">Drag components from the left or summon AI on the right.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {blocks.map((b) => (
+                            <BlockItem key={b.id} block={b} allBlocks={blocks} isQuiz={isQuizDraft} addBlockBase={addBlock} onChange={onBlockChange} onBlur={persistBlock} onRemove={removeBlock} />
+                          ))}
+                        </div>
+                      )}
+                    </SortableContext>
+                  </DroppableCanvas>
+                  <div className="flex justify-center pt-16">
+                    <Button onClick={() => addBlock()} variant="outline" className="rounded-full group hover:bg-primary hover:text-primary-foreground border-2 border-dashed border-border px-12 h-14 text-xl font-black">
+                      <Plus className="mr-4 h-6 w-6 transition-transform group-hover:rotate-90" /> New Question
                     </Button>
                   </div>
-                  {!publishedDraft && (
-                    <p className="mt-1 text-[10px] text-amber-600">
-                      Note: Form must be published for the link to work.
-                    </p>
-                  )}
+                </div>
+              </div>
+
+              <aside className="w-80 shrink-0 border-l border-border bg-card/30 flex flex-col">
+                <div className="flex bg-muted/30 p-1.5 m-5 rounded-2xl ring-1 ring-border shadow-inner">
+                  <button onClick={() => setSidebarTab("setup")} className={cn("flex-1 rounded-xl px-2 py-2.5 text-[9px] font-black uppercase tracking-widest transition-all", sidebarTab === "setup" ? "bg-background shadow-lg text-primary scale-[1.02]" : "text-muted-foreground hover:text-foreground")}>Setup</button>
+                  <button onClick={() => setSidebarTab("ai")} className={cn("flex-1 rounded-xl px-2 py-2.5 text-[9px] font-black uppercase tracking-widest transition-all", sidebarTab === "ai" ? "bg-background shadow-lg text-primary scale-[1.02]" : "text-muted-foreground hover:text-foreground")}>AI Gen</button>
+                  <button onClick={() => setSidebarTab("theme")} className={cn("flex-1 rounded-xl px-2 py-2.5 text-[9px] font-black uppercase tracking-widest transition-all", sidebarTab === "theme" ? "bg-background shadow-lg text-primary scale-[1.02]" : "text-muted-foreground hover:text-foreground")}>Style</button>
                 </div>
 
-                <div className="grid gap-6 rounded-lg border border-border bg-muted/10 p-4">
-                  <div className="pt-2">
-                    <label className="text-sm font-medium">Custom Slug</label>
-                    <input
-                      type="text"
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
-                      value={slugDraft}
-                      onChange={(e) =>
-                        setSlugDraft(
-                          e.target.value
-                            .toLowerCase()
-                            .replace(/[^a-z0-9-]/g, "")
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="pt-2">
-                    <label className="text-sm font-medium">
-                      Redirect URL on Submit
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="https://example.com/thanks"
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
-                      value={redirectUrlDraft}
-                      onChange={(e) => setRedirectUrlDraft(e.target.value)}
-                    />
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      Users will be automatically redirected to this URL after
-                      submission.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Theme</label>
-                    <select
-                      value={themeDraft}
-                      onChange={(e) => setThemeDraft(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
-                    >
-                      <option value="minimal">Minimal</option>
-                      <option value="playful">Playful</option>
-                      <option value="corporate">Corporate</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-border pt-4">
-                    <div className="space-y-0.5">
-                      <label className="text-sm font-medium">Quiz Mode</label>
-                      <p className="text-[10px] text-muted-foreground">
-                        Type is immutable once created
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      className="h-5 w-5 disabled:opacity-50"
-                      checked={isQuizDraft}
-                      disabled={true}
-                    />
-                  </div>
-                  {isQuizDraft && (
-                    <div className="border-t border-border pt-2">
-                      <label className="text-sm font-medium">
-                        Expiry Date & Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
-                        value={expiresAtDraft}
-                        onChange={(e) => setExpiresAtDraft(e.target.value)}
-                      />
+                <div className="flex-1 overflow-y-auto p-6">
+                  {sidebarTab === "setup" && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                      <section className="space-y-5">
+                        <div className="flex items-center justify-between p-5 rounded-[24px] bg-background border border-border shadow-sm group hover:border-primary/50 transition-all">
+                          <div className="space-y-1"><span className="text-xs font-black block">Live Status</span><span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Public availability</span></div>
+                          <input type="checkbox" className="h-7 w-7 rounded-xl accent-primary cursor-pointer ring-offset-background transition-all" checked={publishedDraft} onChange={(e) => { setPublishedDraft(e.target.checked); persistEvent({ event_type: "UPDATE_FORM_META", payload: { name: nameDraft, description: descriptionDraft || null, is_published: e.target.checked, theme: themeDraft, slug: slugDraft, redirect_url: redirectUrlDraft || null, is_quiz: isQuizDraft, expires_at: expiresAtDraft ? new Date(expiresAtDraft).toISOString() : null } }) }} />
+                        </div>
+                        <div className="space-y-2.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Unique URL</label><input type="text" className="w-full rounded-2xl border border-border bg-background px-5 py-4 text-sm font-bold outline-none focus:ring-4 ring-primary/10 transition-all" value={slugDraft} onChange={(e) => setSlugDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} onBlur={saveMeta} placeholder="e.g. feedback-2024" /></div>
+                        <div className="space-y-2.5"><label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-2">Visual Theme</label><select value={themeDraft} onChange={(e) => setThemeDraft(e.target.value)} onBlur={saveMeta} className="w-full rounded-2xl border border-border bg-background px-5 py-4 text-sm font-bold outline-none appearance-none cursor-pointer">
+                          <option value="minimal">Minimal White</option>
+                          <option value="playful">Playful Peach</option>
+                          <option value="corporate">Corporate Slate</option>
+                        </select></div>
+                      </section>
+                      <section className="pt-10 border-t border-border"><Button variant="outline" size="sm" className="w-full rounded-2xl border-destructive/20 text-destructive hover:bg-destructive/5 font-black py-7 text-xs uppercase tracking-widest" onClick={deleteForm}><Trash2 className="mr-3 size-4" /> Destroy Project</Button></section>
                     </div>
                   )}
-                </div>
 
-                <div className="space-y-4 pt-6">
-                  <div className="border-b border-border pb-2">
-                    <h3 className="text-sm font-bold tracking-widest text-primary uppercase">
-                      Advanced Features
-                    </h3>
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
-                    <div className="mb-2 flex items-center justify-between">
-                      <h4 className="flex items-center gap-2 text-sm font-semibold">
-                        <Component className="size-4" /> Embed in your website
-                      </h4>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        className="h-7 text-[10px]"
-                        onClick={() => {
-                          const code = `<div id="formbar-embed" data-form-id="${formId}"></div>\n<script src="${window.location.origin}/embed.js" async></script>`
-                          navigator.clipboard.writeText(code)
-                          alert("Embed code copied!")
-                        }}
-                      >
-                        Copy Code
-                      </Button>
-                    </div>
-                    <p className="mb-4 text-xs text-muted-foreground">
-                      Paste this code where you want the form to appear.
-                    </p>
-                    <pre className="overflow-x-auto rounded-md border border-border bg-muted p-3 text-[10px]">
-                      {`<div id="formbar-embed" data-form-id="${formId}"></div>
-<script src="${window.location.origin}/embed.js" async></script>`}
-                    </pre>
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
-                    <div className="mb-2 flex items-center justify-between">
-                      <h4 className="flex items-center gap-2 text-sm font-semibold">
-                        <Route className="size-4" /> API Submission
-                      </h4>
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        className="h-7 text-[10px]"
-                        onClick={() => {
-                          const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/f/${formId}/submit`
-                          navigator.clipboard.writeText(url)
-                          alert("API URL copied!")
-                        }}
-                      >
-                        Copy URL
-                      </Button>
-                    </div>
-                    <p className="mb-4 text-xs text-muted-foreground">
-                      Submit form data directly from your server.
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600">
-                          POST
-                        </span>
-                        <code className="truncate text-[10px]">{`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/f/${formId}/submit`}</code>
+                  {sidebarTab === "ai" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+                      <div className="rounded-2xl bg-primary/10 border-2 border-primary/20 p-5">
+                        <div className="flex items-center gap-2 text-primary mb-2"><Sparkles className="size-5" /><span className="text-[10px] font-black uppercase tracking-widest">Neural Forge</span></div>
+                        <p className="text-[11px] text-primary/80 leading-relaxed font-bold">Instantly generate complete form schemas using Gemini AI. Describe your goals below.</p>
                       </div>
-                      <pre className="overflow-x-auto rounded-md border border-border bg-muted p-3 text-[10px]">
-                        {`{
-  "answers": {
-    "block_id_1": "answer text",
-    "block_id_2": ["choice1", "choice2"]
-  }
-}`}
-                      </pre>
+                      <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="e.g. Create a 5-question satisfaction survey for a coffee shop..." className="flex-1 w-full rounded-3xl border-2 border-border bg-background p-6 text-sm font-bold outline-none focus:border-primary transition-all resize-none shadow-inner" />
+                      <Button onClick={handleGenerateAi} disabled={isGeneratingAi || !aiPrompt} className="w-full rounded-3xl h-16 text-lg font-black tracking-tighter shadow-xl shadow-primary/20">
+                        {isGeneratingAi ? <Loader2 className="mr-3 size-6 animate-spin" /> : <Sparkles className="mr-3 size-6" />} Generate Structure
+                      </Button>
                     </div>
-                  </div>
-                </div>
+                  )}
 
-                <div className="flex items-center justify-between pt-4">
-                  <div className="mr-4 flex-1 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-                    <h4 className="mb-1 text-sm font-bold tracking-widest text-destructive uppercase">
-                      Danger Zone
-                    </h4>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      Once deleted, this form and all its data cannot be
-                      recovered.
-                    </p>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={deleteForm}
-                    >
-                      Delete Form
-                    </Button>
-                  </div>
-                  <Button onClick={saveMeta} disabled={savingMeta}>
-                    {savingMeta && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Save All Settings
-                  </Button>
+                  {sidebarTab === "theme" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 h-full flex flex-col">
+                      <div className="rounded-2xl bg-amber-500/10 border-2 border-amber-500/20 p-5">
+                        <div className="flex items-center gap-2 text-amber-700 mb-2"><Palette className="size-5" /><span className="text-[10px] font-black uppercase tracking-widest">Custom Engine</span></div>
+                        <p className="text-[11px] text-amber-700/80 leading-relaxed font-bold">Inject raw CSS to customize the form experience. Scoped to .form-root.</p>
+                      </div>
+                      <textarea value={customCss} onChange={(e) => setCustomCss(e.target.value)} placeholder=".form-root { --primary: #ff0000; }" className="flex-1 w-full rounded-3xl border-2 border-border bg-background p-6 text-[11px] font-mono outline-none focus:border-amber-500 transition-all resize-none shadow-inner" />
+                      <Button onClick={saveMeta} className="w-full rounded-3xl h-14 text-sm font-black tracking-widest uppercase">Apply Aesthetics</Button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
+              </aside>
+            </>
           )}
 
           {activeTab === "submissions" && (
-            <div className="rounded-[12px] border border-border bg-card p-6 shadow-sm">
-              <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
-                <h3 className="text-lg font-semibold">Form Submissions</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportCsv}
-                  disabled={submissions.length === 0}
-                >
-                  <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
-                  Export CSV
-                </Button>
+            <div className="flex-1 overflow-y-auto p-12 bg-muted/5">
+              <div className="mx-auto max-w-6xl">
+                <div className="mb-16 flex items-center justify-between">
+                  <div><h2 className="text-5xl font-black tracking-tighter">Database</h2><p className="text-xl text-muted-foreground mt-2 font-medium tracking-tight">Review raw submission logs and generated analytics.</p></div>
+                  <Button variant="outline" onClick={exportCsv} disabled={submissions.length === 0} className="rounded-full h-14 px-10 text-lg font-black border-2"><FileSpreadsheet className="mr-3 h-5 w-5 text-emerald-600" /> Export CSV</Button>
+                </div>
+                {subsLoading ? <div className="flex justify-center py-40 bg-background rounded-[40px] border border-border shadow-inner"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>
+                : submissions.length === 0 ? <div className="py-40 text-center bg-background rounded-[40px] border-4 border-dashed border-border"><p className="text-2xl font-black text-muted-foreground tracking-tighter uppercase opacity-30">Zero Records Found</p></div>
+                : <div className="overflow-hidden rounded-[40px] border border-border bg-background shadow-2xl shadow-foreground/5 animate-in slide-in-from-bottom-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm border-collapse">
+                        <thead><tr className="border-b border-border bg-muted/30"><th className="px-8 py-6 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Timestamp</th>{isQuizDraft && <th className="px-8 py-6 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Score</th>}{blocks.filter(b => !b.type.startsWith("h") && b.type !== "paragraph").slice(0, 5).map(b => <th key={b.id} className="px-8 py-6 font-black uppercase tracking-widest text-[10px] text-muted-foreground truncate max-w-[150px]">{b.label || b.type}</th>)}<th className="px-8 py-6 font-black uppercase tracking-widest text-[10px] text-muted-foreground text-right">Data</th></tr></thead>
+                        <tbody className="divide-y divide-border/50">{submissions.map((sub) => (
+                          <tr key={sub.id} className="transition-all hover:bg-primary/[0.02] group">
+                            <td className="px-8 py-5 text-xs font-black font-mono text-muted-foreground">{new Date(sub.submitted_at).toLocaleString()}</td>
+                            {isQuizDraft && <td className="px-8 py-5"><span className="rounded-lg bg-emerald-500/10 px-3 py-1 font-black text-emerald-600 text-[10px] uppercase">{sub.score} Pts</span></td>}
+                            {blocks.filter(b => !b.type.startsWith("h") && b.type !== "paragraph").slice(0, 5).map(b => <td key={b.id} className="px-8 py-5 font-bold text-muted-foreground/80 truncate max-w-[150px]">{String(sub.answers?.[b.id] || "—")}</td>)}
+                            <td className="px-8 py-5 text-right"><Button variant="ghost" size="sm" className="rounded-full h-9 px-5 font-black text-[10px] uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-primary-foreground" onClick={() => alert(JSON.stringify(sub.answers, null, 2))}>Inspect</Button></td>
+                          </tr>
+                        ))}</tbody>
+                      </table>
+                    </div>
+                  </div>
+                }
               </div>
-
-              {subsLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : submissions.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">
-                  No submissions yet.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-border font-medium text-muted-foreground">
-                        <th className="px-4 py-3">Date</th>
-                        {isQuizDraft && <th className="px-4 py-3">Score</th>}
-                        {blocks
-                          .filter(
-                            (b) =>
-                              !b.type.startsWith("h") && b.type !== "paragraph"
-                          )
-                          .slice(0, 3)
-                          .map((b) => (
-                            <th key={b.id} className="px-4 py-3">
-                              {b.label || b.type}
-                            </th>
-                          ))}
-                        <th className="px-4 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {submissions.map((sub) => (
-                        <tr
-                          key={sub.id}
-                          className="border-b border-border/50 transition-colors hover:bg-muted/30"
-                        >
-                          <td className="px-4 py-3 text-xs text-muted-foreground">
-                            {new Date(sub.submitted_at).toLocaleString()}
-                          </td>
-                          {isQuizDraft && (
-                            <td className="px-4 py-3">
-                              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-bold text-emerald-600">
-                                {sub.score}
-                              </span>
-                            </td>
-                          )}
-                          {blocks
-                            .filter(
-                              (b) =>
-                                !b.type.startsWith("h") &&
-                                b.type !== "paragraph"
-                            )
-                            .slice(0, 3)
-                            .map((b) => (
-                              <td
-                                key={b.id}
-                                className="max-w-[150px] truncate px-4 py-3"
-                              >
-                                {String(sub.answers?.[b.id] || "—")}
-                              </td>
-                            ))}
-                          <td className="px-4 py-3">
-                            <Button
-                              variant="ghost"
-                              size="xs"
-                              onClick={() => {
-                                alert(JSON.stringify(sub.answers, null, 2))
-                              }}
-                            >
-                              View JSON
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
           )}
 
           {activeTab === "leaderboard" && (
-            <div
-              className={cn(
-                "rounded-[12px] border border-border bg-card p-6 shadow-sm",
-                isPresentation &&
-                  "rounded-0 fixed inset-0 z-[200] flex flex-col bg-background p-12"
-              )}
-            >
-              <div className="mb-8 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="h-6 w-6 text-amber-500" />
-                  <h3
-                    className={cn(
-                      "text-lg font-semibold",
-                      isPresentation && "text-4xl"
-                    )}
-                  >
-                    Quiz Leaderboard
-                  </h3>
+            <div className={cn("flex-1 overflow-y-auto p-16 bg-muted/5", isPresentation && "fixed inset-0 z-[200] flex flex-col bg-background p-24 overflow-hidden")}>
+              <div className="mb-16 flex items-center justify-between max-w-6xl mx-auto w-full">
+                <div className="flex items-center gap-6">
+                  <div className="size-20 rounded-[32px] bg-amber-500 flex items-center justify-center shadow-2xl shadow-amber-500/40 animate-bounce duration-1000"><Sparkles className="size-10 text-amber-950" /></div>
+                  <h3 className={cn("text-6xl font-black tracking-tighter", isPresentation && "text-9xl")}>Hall of Fame</h3>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsPresentation(!isPresentation)}
-                  >
-                    <Maximize2 className="mr-2 h-4 w-4" />
-                    {isPresentation ? "Exit Presentation" : "Presentation Mode"}
-                  </Button>
-                  {isPresentation && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsPresentation(false)}
-                    >
-                      <X className="size-6" />
-                    </Button>
-                  )}
-                </div>
+                <Button variant="outline" className="rounded-3xl h-16 px-10 text-lg font-black tracking-tighter uppercase border-4 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all" onClick={() => setIsPresentation(!isPresentation)}>{isPresentation ? "Close View" : "Project to Screen"}</Button>
               </div>
-
-              {leaderboard.length === 0 ? (
-                <div className="flex flex-1 flex-col items-center justify-center py-20">
-                  <Users className="mb-4 size-12 text-muted-foreground/30" />
-                  <p className="text-lg text-muted-foreground">
-                    Waiting for participants...
-                  </p>
-                </div>
-              ) : (
-                <div
-                  className={cn(
-                    "grid gap-4",
-                    isPresentation
-                      ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                      : "grid-cols-1"
-                  )}
-                >
-                  {leaderboard.map((sub, i) => (
-                    <div
-                      key={sub.id}
-                      className={cn(
-                        "flex items-center justify-between rounded-xl border p-4 transition-all",
-                        i === 0
-                          ? "scale-105 border-amber-500/30 bg-amber-500/10 shadow-lg shadow-amber-500/10"
-                          : "border-border/50 bg-muted/20",
-                        isPresentation ? "p-8" : "p-4"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={cn(
-                            "flex items-center justify-center rounded-full font-bold",
-                            i === 0
-                              ? "size-10 bg-amber-500 text-amber-950"
-                              : "size-8 bg-muted text-muted-foreground",
-                            isPresentation && i === 0
-                              ? "size-16 text-2xl"
-                              : isPresentation
-                                ? "size-12 text-xl"
-                                : ""
-                          )}
-                        >
-                          {i + 1}
-                        </div>
-                        <div>
-                          <p
-                            className={cn(
-                              "font-bold",
-                              isPresentation ? "text-2xl" : "text-lg"
-                            )}
-                          >
-                            {sub.answers?.[
-                              blocks.find((b) => b.type === "short_text")?.id ||
-                                ""
-                            ] || "Anonymous User"}
-                          </p>
-                          <p className="font-mono text-xs text-muted-foreground">
-                            {sub.id.slice(0, 8)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div
-                          className={cn(
-                            "font-black text-emerald-600",
-                            isPresentation ? "text-5xl" : "text-2xl"
-                          )}
-                        >
-                          {sub.score}
-                        </div>
-                        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                          points
-                        </p>
-                      </div>
+              {leaderboard.length === 0 ? <div className="flex flex-1 flex-col items-center justify-center py-40 max-w-6xl mx-auto w-full border-8 border-dashed border-border rounded-[60px] bg-background/50"><Users className="mb-10 size-24 text-muted-foreground/10" /><p className="text-4xl font-black text-muted-foreground/30 tracking-tighter uppercase">No Legends Yet</p></div>
+              : <div className={cn("grid gap-8 max-w-6xl mx-auto w-full", isPresentation ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1")}>{leaderboard.map((sub, i) => (
+                  <div key={sub.id} className={cn("flex items-center justify-between rounded-[40px] border-4 p-8 transition-all animate-in zoom-in-95 duration-500", i === 0 ? "scale-110 border-amber-500 bg-amber-500/10 shadow-[0_0_80px_-20px_rgba(245,158,11,0.4)] ring-8 ring-amber-500/5" : "border-border/50 bg-background shadow-2xl shadow-foreground/5", isPresentation ? "p-16" : "p-8")}>
+                    <div className="flex items-center gap-8">
+                      <div className={cn("flex items-center justify-center rounded-[24px] font-black", i === 0 ? "size-20 bg-amber-500 text-amber-950 text-4xl shadow-lg" : "size-16 bg-muted text-muted-foreground text-2xl", isPresentation && i === 0 ? "size-32 text-6xl rounded-[40px]" : isPresentation ? "size-24 text-5xl rounded-[32px]" : "")}>{i + 1}</div>
+                      <div><p className={cn("font-black tracking-tighter uppercase", isPresentation ? "text-5xl" : "text-3xl")}>{sub.answers?.[blocks.find(b => b.type === "short_text")?.id || ""] || "Anonymous"}</p><p className="font-black text-[10px] text-muted-foreground uppercase tracking-[0.3em] mt-2 opacity-50">Log ID: {sub.id.slice(0, 8)}</p></div>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="text-right"><div className={cn("font-black text-emerald-600 tracking-tighter leading-none", isPresentation ? "text-9xl" : "text-6xl")}>{sub.score}</div><p className="text-[12px] font-black tracking-[0.4em] text-muted-foreground uppercase mt-2">Points</p></div>
+                  </div>
+                ))}</div>
+              }
             </div>
           )}
 
           <DragOverlay>
             {activeId ? (
-              <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3 opacity-80 shadow-sm">
-                <span className="text-sm font-medium">New Block</span>
+              <div className="flex items-center gap-4 rounded-3xl border-4 border-primary bg-background p-8 shadow-[0_0_100px_-20px_rgba(var(--primary),0.5)] scale-110 ring-8 ring-primary/5 transition-transform animate-pulse">
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center"><Plus className="h-6 w-6 text-primary" /></div>
+                <span className="text-2xl font-black uppercase tracking-tighter text-primary">Placing Block</span>
               </div>
             ) : null}
           </DragOverlay>
         </DndContext>
       </div>
     </main>
+  )
+}
+ain>
   )
 }

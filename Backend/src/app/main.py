@@ -3,11 +3,11 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-import json
 
 from app.core.database import connect_to_db, close_db_connection
 from app.core.mongodb import connect_to_mongo, close_mongo_connection
 from app.routers.auth import router as auth_router
+from app.routers.ai import router as ai_router
 from app.routers.forms import router as forms_router
 from app.routers.public_forms import router as public_forms_router
 from app.routers.health import router as health_router
@@ -39,6 +39,7 @@ app.include_router(
     organizations_router, prefix="/organizations", tags=["organizations"]
 )
 app.include_router(forms_router, prefix="/forms", tags=["forms"])
+app.include_router(ai_router, prefix="/ai", tags=["ai"])
 app.include_router(public_forms_router, prefix="/f", tags=["public_forms"])
 
 # Anonymous Homepage Multiplayer

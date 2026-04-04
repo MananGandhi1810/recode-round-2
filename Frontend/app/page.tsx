@@ -283,7 +283,7 @@ export default function Page() {
   const [remoteCursors, setRemoteCursors] = React.useState<
     Record<string, { x: number; y: number; color: string }>
   >({})
-  const myId = React.useMemo(() => Math.random().toString(36).substring(7), [])
+  const [myId] = React.useState(() => Math.random().toString(36).substring(7))
   const wsRef = React.useRef<WebSocket | null>(null)
   const lastSendTime = React.useRef<number>(0)
 

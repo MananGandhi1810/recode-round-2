@@ -296,9 +296,17 @@ async def websocket_endpoint(
         await websocket.close(code=1008)
         return
 
+    import hashlib
+    import colorsys
+    h = int(hashlib.md5(str(user.id).encode()).hexdigest()[:8], 16) / 0xffffffff
+    rgb = colorsys.hsv_to_rgb(h, 0.6, 0.8)
+    color = f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
+
     user_meta = {
         "userId": str(user.id),
-        "label": _email_initials(user.email),
+        "label": user.full_name or user.email.split('@')[0],
+        "initials": _email_initials(user.full_name or user.email),
+        "color": color,
     }
     await manager.connect(form_id, websocket, user_meta=user_meta)
     await websocket.send_json(

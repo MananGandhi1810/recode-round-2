@@ -55,6 +55,7 @@ export type FormRecord = {
   is_quiz: boolean
   expires_at: string | null
   redirect_url: string | null
+  custom_css: string | null
   schema_snapshot: FormSchemaSnapshot
   created_at: string
   updated_at: string
@@ -80,7 +81,14 @@ export function applyFormEvent(
 
   if (event.event_type === "ADD_BLOCK") {
     const block = event.payload.block as FormBlock | undefined
+    const index = typeof event.payload.index === "number" ? event.payload.index : -1
+    
     if (block) {
+      if (index >= 0 && index <= currentBlocks.length) {
+        const copy = [...currentBlocks]
+        copy.splice(index, 0, block)
+        return { blocks: copy }
+      }
       return { blocks: [...currentBlocks, block] }
     }
     return { blocks: currentBlocks }

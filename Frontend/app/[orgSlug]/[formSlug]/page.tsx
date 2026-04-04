@@ -131,6 +131,10 @@ export default function PublicFormPage() {
               return String(val || "") === String(condValue || "")
             case "not_equals":
               return String(val || "") !== String(condValue || "")
+            case "greater_than":
+              return Number(val || 0) > Number(condValue || 0)
+            case "less_than":
+              return Number(val || 0) < Number(condValue || 0)
             case "contains":
               return String(val || "")
                 .toLowerCase()

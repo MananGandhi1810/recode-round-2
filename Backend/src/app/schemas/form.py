@@ -99,6 +99,7 @@ class FormUpdate(BaseModel):
     is_quiz: Optional[bool] = None
     expires_at: Optional[datetime] = None
     redirect_url: Optional[str] = None
+    custom_css: Optional[str] = None
 
 
 class FormEventCreate(BaseModel):

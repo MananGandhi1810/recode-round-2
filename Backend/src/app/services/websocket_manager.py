@@ -33,7 +33,11 @@ class FormConnectionManager:
         return user_meta
 
     def list_presence(self, form_id: str) -> list[dict]:
-        return list(self.presence.get(form_id, {}).values())
+        users = {}
+        for meta in self.presence.get(form_id, {}).values():
+            if "userId" in meta:
+                users[meta["userId"]] = meta
+        return list(users.values())
 
     async def broadcast_to_form(
         self, form_id: str, message: dict, exclude: WebSocket = None
