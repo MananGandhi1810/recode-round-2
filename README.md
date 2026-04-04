@@ -35,8 +35,8 @@ The application will be available at:
 ### Hot-Reloading
 
 Both the frontend and backend are configured for hot-reloading:
-- **Backend**: Source code is mounted from `./Backend/src`. Changes trigger a Uvicorn reload.
-- **Frontend**: The entire `./Frontend` directory is mounted. Next.js Turbopack handles fast refreshes.
+- **Backend**: Source code is mounted from `./Backend/src`.
+- **Frontend**: The entire `./Frontend` directory is mounted.
 
 ## Service Ports
 
