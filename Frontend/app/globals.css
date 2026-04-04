@@ -47,76 +47,72 @@
 }
 
 :root {
-  --background: oklch(0.975 0.015 90); /* Very soft, warm cream/beige base */
-  --foreground: oklch(0.3 0.03 250); /* Deep artistic indigo-gray for text */
-  --card: oklch(0.99 0.005 90); /* Slightly lighter cream to let cards float */
-  --card-foreground: oklch(0.3 0.03 250);
-  --popover: oklch(0.99 0.005 90);
-  --popover-foreground: oklch(0.3 0.03 250);
-  --primary: oklch(0.68 0.14 30); /* Rich warm terracotta/coral */
-  --primary-foreground: oklch(0.99 0.01 90);
-  --secondary: oklch(0.92 0.04 140); /* Soft sage green */
-  --secondary-foreground: oklch(0.35 0.05 140);
-  --muted: oklch(0.93 0.02 90); /* Warm muted cream */
-  --muted-foreground: oklch(0.6 0.03 90);
-  --accent: oklch(0.9 0.06 230); /* Soft artistic blue/cyan */
-  --accent-foreground: oklch(0.3 0.05 230);
-  --destructive: oklch(0.65 0.15 20);
-  --border: oklch(0.88 0.02 90); /* Artistic soft natural border */
-  --input: oklch(0.88 0.02 90);
-  --ring: oklch(0.68 0.14 30);
-  --radius: 1rem; /* Bouncier, tally-like artistic corners */
-  --chart-1: oklch(0.68 0.14 30);
-  --chart-2: oklch(0.7 0.12 140);
-  --chart-3: oklch(0.72 0.11 230);
-  --chart-4: oklch(0.74 0.12 300);
-  --chart-5: oklch(0.76 0.1 70);
-  --sidebar: oklch(0.96 0.02 90);
-  --sidebar-foreground: oklch(0.3 0.03 250);
-  --sidebar-primary: oklch(0.68 0.14 30);
-  --sidebar-primary-foreground: oklch(0.99 0.01 90);
-  --sidebar-accent: oklch(0.9 0.06 230);
-  --sidebar-accent-foreground: oklch(0.3 0.05 230);
-  --sidebar-border: oklch(0.88 0.02 90);
-  --sidebar-ring: oklch(0.68 0.14 30);
+  --background: oklch(0.98 0.02 195); /* Soft cyan-tinted off-white */
+  --foreground: oklch(0.15 0.01 250); /* Stark, high-contrast dark text */
+  --card: oklch(1 0 0); /* Pure white minimal cards */
+  --card-foreground: oklch(0.15 0.01 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 250);
+  --primary: oklch(0.85 0.2 195); /* Bright Cyan/Aqua from Logo */
+  --primary-foreground: oklch(0.15 0.01 250);
+  --secondary: oklch(0.96 0.01 90); /* Soft minimalistic gray */
+  --secondary-foreground: oklch(0.15 0.01 250);
+  --muted: oklch(0.96 0.01 90);
+  --muted-foreground: oklch(0.55 0.01 250);
+  --accent: oklch(0.85 0.2 195); /* Match accent to primary */
+  --accent-foreground: oklch(0.15 0.01 250);
+  --destructive: oklch(0.6 0.15 20);
+  --border: oklch(0.90 0.01 250); /* Clean subtle gray border */
+  --input: oklch(0.90 0.01 250);
+  --ring: oklch(0.85 0.2 195);
+  --radius: 0.5rem; /* Structured, minimal Tally-style corners */
+  --chart-1: oklch(0.3 0 0);
+  --chart-2: oklch(0.4 0 0);
+  --chart-3: oklch(0.5 0 0);
+  --chart-4: oklch(0.6 0 0);
+  --chart-5: oklch(0.7 0 0);
+  --sidebar: oklch(0.985 0.002 90);
+  --sidebar-foreground: oklch(0.15 0.01 250);
+  --sidebar-primary: oklch(0.85 0.2 195);
+  --sidebar-primary-foreground: oklch(0.15 0.01 250);
+  --sidebar-accent: oklch(0.85 0.2 195);
+  --sidebar-accent-foreground: oklch(0.15 0.01 250);
+  --sidebar-border: oklch(0.90 0.01 250);
+  --sidebar-ring: oklch(0.85 0.2 195);
 }
 
 .dark {
-  --background: oklch(
-    0.15 0.02 15
-  ); /* Slightly darker deep purple-violet warmed toward peach */
-  --foreground: oklch(0.95 0.02 30); /* Soft pastel peach-white */
-  --card: oklch(0.23 0.03 20); /* Slightly lighter dark purple/peach */
-  --card-foreground: oklch(0.95 0.02 30);
-  --popover: oklch(0.23 0.03 20);
-  --popover-foreground: oklch(0.95 0.02 30);
-  --primary: oklch(
-    0.68 0.14 30
-  ); /* Rich warm terracotta/peach (Matches light mode) */
-  --primary-foreground: oklch(0.99 0.01 90);
-  --secondary: oklch(0.35 0.06 30); /* Darker peach for secondary accents */
-  --secondary-foreground: oklch(0.95 0.02 30);
-  --muted: oklch(0.3 0.04 25); /* Muted peach-grey */
-  --muted-foreground: oklch(0.7 0.06 30);
-  --accent: oklch(0.35 0.06 30);
-  --accent-foreground: oklch(0.68 0.14 30);
-  --destructive: oklch(0.65 0.2 20);
-  --border: oklch(0.33 0.04 25); /* Border softened with peach hues */
-  --input: oklch(0.3 0.04 25);
-  --ring: oklch(0.68 0.14 30);
-  --chart-1: oklch(0.68 0.14 30);
-  --chart-2: oklch(0.8 0.12 180);
-  --chart-3: oklch(0.85 0.15 110);
-  --chart-4: oklch(0.7 0.15 280);
-  --chart-5: oklch(0.75 0.12 40);
-  --sidebar: oklch(0.15 0.03 300);
-  --sidebar-foreground: oklch(0.95 0.02 300);
-  --sidebar-primary: oklch(0.68 0.14 30);
-  --sidebar-primary-foreground: oklch(0.99 0.01 90);
-  --sidebar-accent: oklch(0.25 0.05 310);
-  --sidebar-accent-foreground: oklch(0.68 0.14 30);
-  --sidebar-border: oklch(0.32 0.06 310);
-  --sidebar-ring: oklch(0.68 0.14 30);
+  --background: oklch(0.15 0 0); /* Pure deep minimal dark */
+  --foreground: oklch(0.98 0 0); /* Crisp minimal white */
+  --card: oklch(0.18 0 0); /* Barely discernible card contrast */
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.85 0.2 195); /* Bright Cyan/Aqua from Logo */
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.85 0.2 195); /* Match accent to primary */
+  --accent-foreground: oklch(0.15 0 0);
+  --destructive: oklch(0.6 0.15 20);
+  --border: oklch(0.25 0 0); /* Clean subtle dark border */
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.85 0.2 195);
+  --chart-1: oklch(0.7 0 0);
+  --chart-2: oklch(0.6 0 0);
+  --chart-3: oklch(0.5 0 0);
+  --chart-4: oklch(0.4 0 0);
+  --chart-5: oklch(0.3 0 0);
+  --sidebar: oklch(0.15 0 0);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.85 0.2 195);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.85 0.2 195);
+  --sidebar-accent-foreground: oklch(0.15 0 0);
+  --sidebar-border: oklch(0.25 0 0);
+  --sidebar-ring: oklch(0.85 0.2 195);
 }
 
 @layer base {
@@ -125,59 +121,30 @@
   }
   body {
     @apply relative min-h-screen overflow-x-hidden bg-background text-foreground transition-colors duration-500;
-    /* Soft, creative pastel radial backdrops for light mode - richer artistic colors */
-    background-image:
-      radial-gradient(
-        at 0% 0%,
-        oklch(0.88 0.12 140 / 0.5) 0px,
-        transparent 50%
-      ),
-      radial-gradient(
-        at 100% 0%,
-        oklch(0.85 0.14 230 / 0.5) 0px,
-        transparent 50%
-      ),
-      radial-gradient(
-        at 100% 100%,
-        oklch(0.9 0.18 70 / 0.5) 0px,
-        transparent 50%
-      ),
-      radial-gradient(
-        at 0% 100%,
-        oklch(0.85 0.16 330 / 0.5) 0px,
-        transparent 50%
-      ),
-      radial-gradient(at 50% 50%, oklch(0.9 0.12 30 / 0.3) 0px, transparent 60%);
-    background-attachment: fixed;
     transition:
       background-color 0.5s ease,
       color 0.5s ease;
   }
-  .dark body {
-    /* Funky neon/pastel ambient backdrops for dark mode with MORE PEACH! */
-    background-image:
-      radial-gradient(
-        at 0% 0%,
-        oklch(0.68 0.14 30 / 0.18) 0px,
-        transparent 50%
-      ),
-      radial-gradient(
-        at 100% 0%,
-        oklch(0.25 0.1 180 / 0.3) 0px,
-        transparent 50%
-      ),
-      radial-gradient(
-        at 100% 100%,
-        oklch(0.68 0.14 30 / 0.15) 0px,
-        transparent 50%
-      ),
-      radial-gradient(
-        at 0% 100%,
-        oklch(0.25 0.1 280 / 0.3) 0px,
-        transparent 50%
-      );
-  }
   html {
     @apply font-sans;
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(60%);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20%);
+    opacity: 0;
   }
 }

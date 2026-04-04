@@ -71,7 +71,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-svh overflow-hidden bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.12),transparent_26%)]">
+    <main className="relative min-h-svh overflow-hidden bg-gradient-to-br from-primary/10 via-background to-background">
       <div className="relative mx-auto flex min-h-svh w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between gap-4">
           <div>
