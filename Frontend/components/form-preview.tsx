@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   X,
   Plus,
+  Timer,
 } from "lucide-react"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -18,6 +19,15 @@ import confetti from "canvas-confetti"
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+function validateInput(value: any, block: any): string | null {
+  if (block.config?.required) {
+    if (!value || (Array.isArray(value) && value.length === 0)) {
+      return `${block.label || "This field"} is required`
+    }
+  }
+  return null
 }
 
 const themeClasses = {
@@ -54,34 +64,11 @@ export function FormPreview({
   const [answers, setAnswers] = React.useState<Record<string, any>>({})
   const [currentStep, setCurrentStep] = React.useState(0)
   const [isSubmitted, setIsSubmitted] = React.useState(false)
+  const [timeLeft, setTimeLeft] = React.useState<number | null>(null)
+  const [score, setScore] = React.useState(0)
+  const [validationError, setValidationError] = React.useState<string | null>(null)
 
-  const handleNext = React.useCallback(() => {
-    setCurrentStep((s) => s + 1)
-  }, [])
-
-  const handleBack = React.useCallback(() => {
-    if (currentStep > 0) setCurrentStep((s) => s - 1)
-  }, [currentStep])
-
-  const parseMentions = React.useCallback(
-    (text: string) => {
-      if (!text) return ""
-      let parsed = text
-      const regex = /\{\{([^}]+)\}\}/g
-      let match
-      while ((match = regex.exec(text)) !== null) {
-        const blockId = match[1]
-        const answer = answers[blockId]
-        const replacement = Array.isArray(answer)
-          ? answer.join(", ")
-          : answer || `[Blank]`
-        parsed = parsed.replace(match[0], String(replacement))
-      }
-      return parsed
-    },
-    [answers]
-  )
-
+  const blocks = form.schema_snapshot?.blocks ?? []
   const evaluateLogic = React.useCallback(
     (block: any) => {
       if (!block.config?.logic || block.config.logic.length === 0) return true
@@ -133,11 +120,43 @@ export function FormPreview({
     [answers]
   )
 
-  const blocks = form.schema_snapshot?.blocks ?? []
   const visibleBlocks = React.useMemo(
     () => blocks.filter((b) => evaluateLogic(b)),
     [blocks, evaluateLogic]
   )
+
+  const handleNext = React.useCallback(() => {
+    const block = visibleBlocks[currentStep]
+    if (block) {
+      const error = validateInput(answers[block.id], block)
+      if (error) {
+        setValidationError(error)
+        return
+      }
+    }
+    setValidationError(null)
+    setCurrentStep((s) => s + 1)
+  }, [currentStep, visibleBlocks, answers])
+
+  React.useEffect(() => {
+    if (timeLeft === null) return
+    if (timeLeft <= 0) {
+      handleNext()
+      return
+    }
+    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [timeLeft, handleNext])
+
+  React.useEffect(() => {
+    if (!form.is_quiz) return
+    const block = visibleBlocks[currentStep]
+    if (block && block.config?.timerSeconds) {
+      setTimeLeft(block.config.timerSeconds)
+    } else {
+      setTimeLeft(null)
+    }
+  }, [currentStep, form.is_quiz, visibleBlocks])
 
   const theme = (form.theme || "minimal") as keyof typeof themeClasses
   const tClass = themeClasses[theme] || themeClasses.minimal
@@ -146,11 +165,47 @@ export function FormPreview({
 
   const isSummaryStep = currentStep >= visibleBlocks.length
 
+  const handleBack = React.useCallback(() => {
+    if (currentStep > 0) setCurrentStep((s) => s - 1)
+  }, [currentStep])
+
+  const parseMentions = React.useCallback(
+    (text: string) => {
+      if (!text) return ""
+      let parsed = text
+      const regex = /\{\{([^}]+)\}\}/g
+      let match
+      while ((match = regex.exec(text)) !== null) {
+        const blockId = match[1]
+        const answer = answers[blockId]
+        const replacement = Array.isArray(answer)
+          ? answer.join(", ")
+          : answer || `[Blank]`
+        parsed = parsed.replace(match[0], String(replacement))
+      }
+      return parsed
+    },
+    [answers]
+  )
+
   const handleAnswer = (blockId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [blockId]: value }))
   }
 
   const submitForm = () => {
+    let finalScore = 0
+    if (form.is_quiz) {
+      visibleBlocks.forEach((block) => {
+        const correct = block.config?.correctAnswer
+        if (correct) {
+          const ans = answers[block.id]
+          if (String(ans).toLowerCase() === String(correct).toLowerCase()) {
+            finalScore += block.config.points || 0
+          }
+        }
+      })
+    }
+    setScore(finalScore)
     setIsSubmitted(true)
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
 
@@ -178,11 +233,33 @@ export function FormPreview({
         </button>
         <div className="w-full max-w-md rounded-[16px] border border-inherit bg-inherit p-8 text-center text-inherit shadow-sm">
           <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-          <h1 className="mb-2 text-2xl font-bold">Preview Submission</h1>
-          <p className="mb-8 text-muted-foreground">
+          <h1 className="mb-2 text-2xl font-bold">
+            {form.is_quiz ? "Quiz Completed" : "Preview Submission"}
+          </h1>
+          <p className="mb-4 text-muted-foreground">
             Thank you for filling out {form.name}.
           </p>
-          <Button onClick={onClose} className={cn("w-full", bClass)}>
+
+          {form.is_quiz && (
+            <div className="mb-8 rounded-xl bg-primary/5 p-6">
+              <p className="text-sm font-black uppercase tracking-widest text-primary/60">
+                Your Final Score
+              </p>
+              <div className="mt-1 text-5xl font-black text-primary">
+                {score}
+                <span className="text-xl text-primary/40">
+                  {" "}
+                  /{" "}
+                  {visibleBlocks.reduce(
+                    (acc, b) => acc + (b.config?.points || 0),
+                    0
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <Button onClick={onClose} className={cn("w-full py-6 text-lg", bClass)}>
             Close Preview
           </Button>
         </div>
@@ -225,6 +302,16 @@ export function FormPreview({
               : `Step ${currentStep + 1} of ${visibleBlocks.length}`}
           </p>
         </div>
+
+        {timeLeft !== null && !isSummaryStep && (
+          <div className="mb-6 flex justify-center">
+            <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 font-mono text-xl font-black text-primary shadow-sm ring-4 ring-primary/5 animate-pulse">
+              <Timer className="size-5" />
+              {Math.floor(timeLeft / 60)}:
+              {(timeLeft % 60).toString().padStart(2, "0")}
+            </div>
+          </div>
+        )}
 
         {isSummaryStep ? (
           <div className="animate-in duration-500 fade-in slide-in-from-bottom-4">
@@ -454,6 +541,12 @@ export function FormPreview({
                 </div>
               )
             })()}
+
+            {validationError && (
+              <p className="mb-4 text-center text-sm font-bold text-destructive animate-in fade-in slide-in-from-top-1">
+                {validationError}
+              </p>
+            )}
 
             <div className="flex gap-3">
               {currentStep > 0 && (

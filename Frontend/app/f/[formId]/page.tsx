@@ -71,13 +71,22 @@ export default function PublicFormPage() {
     null
   )
 
-  const validateInput = (value: string, block: any): string | null => {
-    if (block.config?.required && !value) return "This field is required"
-    if (block.config?.minLength && value.length < block.config.minLength) {
-      return `Minimum ${block.config.minLength} characters required`
-    }
-    if (block.config?.maxLength && value.length > block.config.maxLength) {
-      return `Maximum ${block.config.maxLength} characters allowed`
+  const validateInput = (value: any, block: any): string | null => {
+    const isEmpty =
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0)
+
+    if (block.config?.required && isEmpty) return "This field is required"
+
+    if (!isEmpty && typeof value === "string") {
+      if (block.config?.minLength && value.length < block.config.minLength) {
+        return `Minimum ${block.config.minLength} characters required`
+      }
+      if (block.config?.maxLength && value.length > block.config.maxLength) {
+        return `Maximum ${block.config.maxLength} characters allowed`
+      }
     }
     if (block.config?.validationType === "email") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -175,7 +184,7 @@ export default function PublicFormPage() {
   const handleNext = React.useCallback(() => {
     const block = visibleBlocks[currentStep]
     if (block) {
-      const error = validateInput(String(answers[block.id] || ""), block)
+      const error = validateInput(answers[block.id], block)
       if (error) {
         setValidationError(error)
         return
