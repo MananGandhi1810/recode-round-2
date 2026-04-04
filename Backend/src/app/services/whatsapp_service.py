@@ -96,7 +96,13 @@ async def send_question(phone_number: str, session: dict):
     question_data: Dict[str, Any] = questions[question_index]
     question = FormBlock(**question_data) # Validate with Pydantic model
 
-    message = f"This is an automated form: *{session['form_name']}*\nReply to fill answers to the form\n\n"
+    message = ""
+    if question_index == 0:
+        form_url = f"{settings.frontend_url}/f/{session['form_id']}"
+        message += f"This is an automated form: *{session['form_name']}*\n"
+        message += f"Alternatively, you can fill it out on the web: {form_url}\n\n"
+        message += "Reply to fill answers here on WhatsApp.\n\n"
+
     message += f"Question {question_index + 1}/{len(questions)}:\n"
     message += f"*{question.label}*"
 
