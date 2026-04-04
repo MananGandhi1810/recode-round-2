@@ -1004,6 +1004,10 @@ export default function FormEditorPage() {
   React.useEffect(() => {
     if (activeTab === "submissions") {
       void loadSubmissions()
+      const interval = setInterval(() => {
+        void loadSubmissions()
+      }, 10000)
+      return () => clearInterval(interval)
     }
   }, [activeTab, loadSubmissions])
 
