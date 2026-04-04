@@ -59,7 +59,13 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { FormPreview } from "@/components/form-preview"
 import { cn } from "@/lib/utils"
@@ -913,8 +919,10 @@ export default function FormEditorPage() {
   const [aiPrompt, setAiPrompt] = React.useState("")
   const [isGeneratingAi, setIsGeneratingAi] = React.useState(false)
   const [customCss, setCustomCss] = React.useState("")
-  const [inspectSubmission, setInspectSubmission] = React.useState<any | null>(null)
-  
+  const [inspectSubmission, setInspectSubmission] = React.useState<any | null>(
+    null
+  )
+
   const socketRef = React.useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
@@ -1968,25 +1976,42 @@ export default function FormEditorPage() {
         </DndContext>
       </div>
 
-      <Dialog open={!!inspectSubmission} onOpenChange={(open) => !open && setInspectSubmission(null)}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <Dialog
+        open={!!inspectSubmission}
+        onOpenChange={(open) => !open && setInspectSubmission(null)}
+      >
+        <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Submission Details</DialogTitle>
             <DialogDescription>
-              {inspectSubmission ? `Submitted at ${new Date(inspectSubmission.submitted_at).toLocaleString()} (Log ID: ${inspectSubmission.id})` : ""}
+              {inspectSubmission
+                ? `Submitted at ${new Date(inspectSubmission.submitted_at).toLocaleString()} (Log ID: ${inspectSubmission.id})`
+                : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 pt-4">
-            {inspectSubmission && blocks.filter(b => !b.type.startsWith("h") && b.type !== "paragraph").map(b => (
-              <div key={b.id} className="space-y-1">
-                <p className="text-sm font-bold text-muted-foreground">{b.label || b.type}</p>
-                <div className="rounded-xl bg-muted/50 p-4 text-sm font-mono whitespace-pre-wrap">
-                  {typeof inspectSubmission.answers?.[b.id] === 'object' && inspectSubmission.answers?.[b.id] !== null 
-                    ? JSON.stringify(inspectSubmission.answers[b.id], null, 2) 
-                    : String(inspectSubmission.answers?.[b.id] || "—")}
-                </div>
-              </div>
-            ))}
+            {inspectSubmission &&
+              blocks
+                .filter(
+                  (b) => !b.type.startsWith("h") && b.type !== "paragraph"
+                )
+                .map((b) => (
+                  <div key={b.id} className="space-y-1">
+                    <p className="text-sm font-bold text-muted-foreground">
+                      {b.label || b.type}
+                    </p>
+                    <div className="rounded-xl bg-muted/50 p-4 font-mono text-sm whitespace-pre-wrap">
+                      {typeof inspectSubmission.answers?.[b.id] === "object" &&
+                      inspectSubmission.answers?.[b.id] !== null
+                        ? JSON.stringify(
+                            inspectSubmission.answers[b.id],
+                            null,
+                            2
+                          )
+                        : String(inspectSubmission.answers?.[b.id] || "—")}
+                    </div>
+                  </div>
+                ))}
           </div>
         </DialogContent>
       </Dialog>

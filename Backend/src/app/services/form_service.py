@@ -195,12 +195,12 @@ class FormService:
     async def submit_form_response(submission: FormSubmission):
         db = get_mongo_db()
         now = datetime.datetime.now(datetime.UTC)
-        
+
         answers = {}
         if submission.responses:
             for r in submission.responses:
-                 answers[r.block_id] = r.value
-                 
+                answers[r.block_id] = r.value
+
         form_doc = await db.forms.find_one({"_id": str(submission.form_id)})
         score = 0
         if form_doc and form_doc.get("is_quiz"):

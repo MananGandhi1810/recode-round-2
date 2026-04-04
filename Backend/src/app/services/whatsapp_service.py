@@ -56,8 +56,7 @@ async def send_whatsapp_message(phone_number: str, message: str):
                 f"Error sending WhatsApp message to {phone_number}: {e.response.status_code} - {e.response.text}"
             )
         except httpx.RequestError as e:
-            print(
-                f"Network error sending WhatsApp message to {phone_number}: {e}")
+            print(f"Network error sending WhatsApp message to {phone_number}: {e}")
 
 
 # --- Form Logic ---
