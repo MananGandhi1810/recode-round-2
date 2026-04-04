@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     resend_sender_email: str = Field(default="", alias="RESEND_SENDER_EMAIL")
     resend_sender_name: str = Field(default="", alias="RESEND_SENDER_NAME")
     frontend_url: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")
+    cors_allowed_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000,https://formbar.manan.cloud",
+        alias="CORS_ALLOWED_ORIGINS",
+    )
     whatsapp_webhook_secret: str = Field(
         default="supersecretwhatsappkey", alias="WHATSAPP_WEBHOOK_SECRET"
     )
