@@ -1673,6 +1673,40 @@ export default function FormEditorPage() {
                             }}
                           />
                         </div>
+
+                        <div className="group flex items-center justify-between rounded-[24px] border border-border bg-background p-5 shadow-sm transition-all hover:border-emerald-500/50">
+                          <div className="space-y-1">
+                            <span className="block text-xs font-black text-emerald-600">
+                              Quiz Mode
+                            </span>
+                            <span className="text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
+                              Scores & Timers
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="h-7 w-7 cursor-pointer rounded-xl accent-emerald-500 ring-offset-background transition-all"
+                            checked={isQuizDraft}
+                            onChange={(e) => {
+                              setIsQuizDraft(e.target.checked)
+                              persistEvent({
+                                event_type: "UPDATE_FORM_META",
+                                payload: {
+                                  name: nameDraft,
+                                  description: descriptionDraft || null,
+                                  is_published: publishedDraft,
+                                  theme: themeDraft,
+                                  slug: slugDraft,
+                                  redirect_url: redirectUrlDraft || null,
+                                  is_quiz: e.target.checked,
+                                  expires_at: expiresAtDraft
+                                    ? new Date(expiresAtDraft).toISOString()
+                                    : null,
+                                },
+                              })
+                            }}
+                          />
+                        </div>
                         <div className="space-y-2.5">
                           <label className="ml-2 text-[9px] font-black tracking-[0.2em] text-muted-foreground uppercase">
                             Unique URL
