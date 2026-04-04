@@ -33,6 +33,8 @@ import {
   CreditCard,
   Palette,
   Send,
+  Share2,
+  Code,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -962,7 +964,7 @@ export default function FormEditorPage() {
   const [activeTab, setActiveTab] = React.useState<
     "editor" | "submissions" | "leaderboard"
   >("editor")
-  const [sidebarTab, setSidebarTab] = React.useState<"setup" | "ai" | "theme">(
+  const [sidebarTab, setSidebarTab] = React.useState<"setup" | "ai" | "theme" | "share">(
     "setup"
   )
   const [isPreview, setIsPreview] = React.useState(false)
@@ -1638,6 +1640,17 @@ export default function FormEditorPage() {
                   >
                     Style
                   </button>
+                  <button
+                    onClick={() => setSidebarTab("share")}
+                    className={cn(
+                      "flex-1 rounded-xl px-2 py-2.5 text-[9px] font-black tracking-widest uppercase transition-all",
+                      sidebarTab === "share"
+                        ? "scale-[1.02] bg-background text-primary shadow-lg"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Share
+                  </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
@@ -1820,6 +1833,81 @@ export default function FormEditorPage() {
                       >
                         Apply Aesthetics
                       </Button>
+                    </div>
+                  )}
+
+                  {sidebarTab === "share" && (
+                    <div className="flex h-full animate-in flex-col space-y-6 duration-300 fade-in slide-in-from-right-4">
+                      <div className="rounded-2xl border-2 border-emerald-500/20 bg-emerald-500/10 p-5">
+                        <div className="mb-2 flex items-center gap-2 text-emerald-700">
+                          <Share2 className="size-5" />
+                          <span className="text-[10px] font-black tracking-widest uppercase">
+                            Integrate
+                          </span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed font-bold text-emerald-700/80">
+                          Share your form with the world or integrate it anywhere.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <label className="ml-2 text-[9px] font-black tracking-[0.2em] text-muted-foreground uppercase">
+                          Embed Link
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            className="w-full flex-1 rounded-2xl border border-border bg-background px-4 py-3 text-[10px] font-mono ring-primary/10 transition-all outline-none focus:ring-4"
+                            value={form ? `<iframe src="${window.location.origin}/f/${form.id}?embed=true" width="100%" height="600px" frameborder="0"></iframe>` : ""}
+                          />
+                          <Button
+                            variant="secondary"
+                            className="h-auto rounded-2xl px-5"
+                            onClick={() => {
+                              if (form) {
+                                navigator.clipboard.writeText(`<iframe src="${window.location.origin}/f/${form.id}?embed=true" width="100%" height="600px" frameborder="0"></iframe>`)
+                                toast.success("Embed link copied!")
+                              }
+                            }}
+                          >
+                            <Copy className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <label className="ml-2 text-[9px] font-black tracking-[0.2em] text-muted-foreground uppercase">
+                          API Upload Link
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            className="w-full flex-1 rounded-2xl border border-border bg-background px-4 py-3 text-[10px] font-mono ring-primary/10 transition-all outline-none focus:ring-4"
+                            value={form ? `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}/f/${form.id}/submit` : ""}
+                          />
+                          <Button
+                            variant="secondary"
+                            className="h-auto rounded-2xl px-5"
+                            onClick={() => {
+                              if (form) {
+                                const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+                                navigator.clipboard.writeText(`curl -X POST ${baseUrl}/f/${form.id}/submit \\
+  -H "Content-Type: application/json" \\
+  -d '{"answers": {}}'`)
+                                toast.success("API curl copied!")
+                              }
+                            }}
+                          >
+                            <Copy className="size-4" />
+                          </Button>
+                        </div>
+                        <p className="ml-2 text-[9px] font-bold text-muted-foreground mt-2">
+                          <Code className="inline-block h-3 w-3 mr-1" />
+                          POST payload: {"{ \"answers\": { \"blockId\": \"value\" } }"}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
