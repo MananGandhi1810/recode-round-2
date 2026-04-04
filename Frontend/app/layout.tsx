@@ -35,7 +35,7 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-svh bg-background text-foreground">
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="light">
           {children}
           <Toaster position="bottom-right" />
         </ThemeProvider>
