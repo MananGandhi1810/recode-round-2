@@ -1,12 +1,14 @@
 # FormBar
 
+![Screenshot](assets/screenshot.png)
+
 FormBar is a modern, full-stack application for building and managing forms, featuring a FastAPI backend and a Next.js frontend.
 
 ## Architecture
 
 - **Frontend**: Next.js 16 with React 19, TypeScript, and Tailwind CSS.
 - **Backend**: FastAPI (Python 3.13) with SQLAlchemy (PostgreSQL), Redis (OTP/Caching), and Motor (MongoDB).
-- **Infrastructure**: Docker Compose manages multiple services including PostgreSQL, Redis, MongoDB, ClickHouse, and RustFS.
+- **Infrastructure**: Docker Compose manages multiple services including PostgreSQL, Redis, MongoDB, and RustFS.
 
 ## Local Development
 
@@ -45,7 +47,6 @@ Both the frontend and backend are configured for hot-reloading:
 - PostgreSQL: 5432
 - Redis: 6379
 - MongoDB: 27017
-- ClickHouse: 8123, 9000
 - RustFS: 9001 (Console), 9002 (API)
 
 ## Backend Structure
