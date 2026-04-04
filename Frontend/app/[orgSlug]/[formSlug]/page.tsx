@@ -130,8 +130,9 @@ export default function PublicFormPage() {
         const conditionResults = rule.conditions.map((cond: LogicCondition) => {
           const val = answers[cond.blockId]
           const condValue = cond.value
+          const operator = String(cond.operator)
 
-          switch (cond.operator) {
+          switch (operator) {
             case "equals":
               return String(val || "") === String(condValue || "")
             case "not_equals":
