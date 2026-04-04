@@ -12,6 +12,7 @@ from app.routers.forms import router as forms_router
 from app.routers.public_forms import router as public_forms_router
 from app.routers.health import router as health_router
 from app.routers.organizations import router as organizations_router
+from app.routers.whatsapp import router as whatsapp_router
 
 
 @asynccontextmanager
@@ -41,6 +42,7 @@ app.include_router(
 app.include_router(forms_router, prefix="/forms", tags=["forms"])
 app.include_router(ai_router, prefix="/ai", tags=["ai"])
 app.include_router(public_forms_router, prefix="/f", tags=["public_forms"])
+app.include_router(whatsapp_router)
 
 # Anonymous Homepage Multiplayer
 homepage_connections: list[WebSocket] = []

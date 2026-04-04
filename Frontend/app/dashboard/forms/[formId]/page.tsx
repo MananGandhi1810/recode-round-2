@@ -32,8 +32,11 @@ import {
   Upload,
   CreditCard,
   Palette,
+  Send,
 } from "lucide-react"
 import toast from "react-hot-toast"
+
+import { SendWhatsappFormModal } from "@/components/SendWhatsappFormModal"
 
 import {
   DndContext,
@@ -66,6 +69,9 @@ import {
   type FormEventPayload,
   type FormRecord,
   getWsBaseUrl,
+  type LogicRule,
+  type LogicCondition,
+  type FormSubmissionRecord,
 } from "@/lib/forms"
 
 type PresenceUser = {
@@ -75,13 +81,21 @@ type PresenceUser = {
   color: string
 }
 
+type SubmissionScoreUpdate = {
+  id: string;
+  score: number;
+  answers: Record<string, string | string[]>;
+  submitted_at: string; // ISO format string
+}
+
 type WsIncoming =
   | { type: "PRESENCE_SNAPSHOT"; users: PresenceUser[] }
   | { type: "CURSOR_JOIN"; user: PresenceUser }
   | { type: "CURSOR_LEAVE"; userId: string }
   | { type: "CURSOR_MOVE"; userId: string; x: number; y: number }
   | { type: "EVENT_APPLIED"; formEvent: FormEventPayload; actor?: any }
-  | { type: "SCORE_UPDATE"; submission: any }
+  | { type: "FORM_EVENT"; payload: FormEventPayload }
+  | { type: "SCORE_UPDATE"; submission: SubmissionScoreUpdate }
   | { type: "ERROR"; message: string }
 
 function DroppableCanvas({ children }: { children: React.ReactNode }) {
@@ -100,7 +114,7 @@ function DraggableSidebarItem({
 }: {
   type: string
   label: string
-  icon: any
+  icon: React.ElementType
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `new-${type}`,
@@ -172,7 +186,7 @@ function BlockItem({
   const addLogicRule = () => {
     onChange(block.id, (b) => {
       const currentLogic = b.config.logic || []
-      const newRule: any = {
+      const newRule: LogicRule = {
         id: crypto.randomUUID(),
         action: "show",
         conditionMatch: "all",
@@ -882,13 +896,41 @@ export default function FormEditorPage() {
             <button onClick={() => setActiveTab("submissions")} className={cn("rounded-md px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === "submissions" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground")}>Submissions</button>
             {isQuizDraft && <button onClick={() => setActiveTab("leaderboard")} className={cn("rounded-md px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all", activeTab === "leaderboard" ? "bg-background shadow text-primary" : "text-muted-foreground hover:text-foreground")}>Board</button>}
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2 mr-4">
-            {presence.slice(0, 3).map((u) => (
-              <div key={u.userId} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-[10px] font-black text-white ring-4 ring-primary/5" style={{ backgroundColor: u.color }} title={u.label}>{u.initials}</div>
-            ))}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyPublicUrl}
+              className="hidden rounded-[8px] sm:flex"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Link
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPreview(true)}
+              className="rounded-[8px]"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview
+            </Button>
+            <SendWhatsappFormModal formId={formId}>
+              <Button variant="outline" size="sm" className="rounded-[8px]">
+                <Send className="mr-2 h-4 w-4" />
+                Send via WhatsApp
+              </Button>
+            </SendWhatsappFormModal>
+            <ThemeToggle />
           </div>
           <Button variant="outline" size="sm" onClick={copyPublicUrl} className="hidden rounded-full sm:flex h-9 font-bold px-5">
             {isCopied ? <Check className="h-3 w-3 text-emerald-500 mr-2" /> : <Copy className="h-3 w-3 mr-2" />}
@@ -1074,8 +1116,5 @@ export default function FormEditorPage() {
         </DndContext>
       </div>
     </main>
-  )
-}
-ain>
   )
 }

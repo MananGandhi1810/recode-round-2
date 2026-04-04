@@ -4,7 +4,7 @@ import datetime
 from typing import Optional, List, Dict, Any
 
 from app.core.mongodb import get_mongo_db
-from app.schemas.form import FormCreate, FormResponse, FormEventCreate
+from app.schemas.form import FormCreate, FormResponse, FormEventCreate, FormSubmission
 
 
 class FormService:
@@ -186,3 +186,18 @@ class FormService:
         )
 
         return FormService._map_doc_to_response(updated_doc)
+
+    @staticmethod
+    async def submit_form_response(submission: FormSubmission):
+        db = get_mongo_db()
+        now = datetime.datetime.now(datetime.UTC)
+        submission_doc = {
+            "_id": str(uuid.uuid4()),
+            "form_id": str(submission.form_id),
+            "organization_id": str(submission.organization_id),
+            "responses": [r.model_dump() for r in submission.responses],
+            "submitted_at": now,
+            "submitted_by_whatsapp": submission.submitted_by_whatsapp,
+            "whatsapp_phone_number": submission.whatsapp_phone_number,
+        }
+        await db.submissions.insert_one(submission_doc)

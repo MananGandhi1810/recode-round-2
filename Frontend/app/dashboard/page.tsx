@@ -48,6 +48,7 @@ export default function UserOrganizationsPage() {
   const [newFormName, setNewFormName] = React.useState("")
   const [newFormDescription, setNewFormDescription] = React.useState("")
   const [newFormIsQuiz, setNewFormIsQuiz] = React.useState(false)
+  const [aiPrompt, setAiPrompt] = React.useState("")
 
   // Invitation State
   const [showInviteMember, setShowInviteMember] = React.useState(false)
@@ -195,7 +196,7 @@ export default function UserOrganizationsPage() {
     }
   }
 
-  async function createForm(event: React.FormEvent<HTMLFormElement>) {
+  async function createForm(event: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!selectedOrganizationId || !newFormName.trim()) {
       return
@@ -229,6 +230,47 @@ export default function UserOrganizationsPage() {
     } catch (error) {
       setFormsError(
         error instanceof Error ? error.message : "Could not create form"
+      )
+    } finally {
+      setSavingForm(false)
+    }
+  }
+
+  async function generateFormWithAI(event: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedOrganizationId || !aiPrompt.trim()) {
+      return
+    }
+
+    setSavingForm(true)
+
+    try {
+      const form = await apiFetch<FormRecord>(
+        `/forms/organization/${selectedOrganizationId}/generate`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            prompt: aiPrompt.trim(),
+            name: newFormName.trim() || undefined,
+            description: newFormDescription.trim() || undefined,
+          }),
+        }
+      )
+
+      setFormsByOrganization((current) => ({
+        ...current,
+        [selectedOrganizationId]: [
+          form,
+          ...(current[selectedOrganizationId] ?? []),
+        ],
+      }))
+      setNewFormName("")
+      setNewFormDescription("")
+      setAiPrompt("")
+      setShowNewForm(false)
+    } catch (error) {
+      setFormsError(
+        error instanceof Error ? error.message : "Could not generate form"
       )
     } finally {
       setSavingForm(false)
@@ -495,8 +537,7 @@ export default function UserOrganizationsPage() {
 
             {showNewForm && (
               <form
-                onSubmit={createForm}
-                className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4 md:flex-row"
+                className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4"
               >
                 <div className="flex flex-1 flex-col gap-3">
                   <input
@@ -504,7 +545,6 @@ export default function UserOrganizationsPage() {
                     onChange={(event) => setNewFormName(event.target.value)}
                     placeholder="Form name"
                     className="h-10 w-full rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
-                    required
                   />
                   <input
                     value={newFormDescription}
@@ -525,16 +565,40 @@ export default function UserOrganizationsPage() {
                   </label>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={savingForm}
-                  className="h-10 rounded-[8px] px-4"
-                >
-                  {savingForm ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Create form
-                </Button>
+                <div className="border-t border-border pt-3">
+                  <p className="mb-2 text-sm font-medium">Or generate with AI:</p>
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(event) => setAiPrompt(event.target.value)}
+                    placeholder="Describe the form you want to create (e.g., 'A customer feedback survey with 5 questions about service quality')"
+                    className="h-20 w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm transition outline-none focus:border-ring resize-none"
+                  />
+                </div>
+
+                <div className="flex gap-3 flex-col sm:flex-row">
+                  <Button
+                    onClick={createForm}
+                    disabled={savingForm || !newFormName.trim()}
+                    className="h-10 flex-1 rounded-[8px] px-4"
+                  >
+                    {savingForm ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Create form manually
+                  </Button>
+                  <span className="flex items-center justify-center text-sm text-muted-foreground uppercase">or</span>
+                  <Button
+                    onClick={generateFormWithAI}
+                    disabled={savingForm || !aiPrompt.trim()}
+                    variant="outline"
+                    className="h-10 flex-1 rounded-[8px] px-4"
+                  >
+                    {savingForm && aiPrompt.trim() ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Generate with AI
+                  </Button>
+                </div>
               </form>
             )}
 

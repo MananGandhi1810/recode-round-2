@@ -1,9 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { type FormRecord, type FormBlock, type LogicCondition, type LogicRule } from "@/lib/forms"
 import { useParams, useSearchParams } from "next/navigation"
 import { apiFetch } from "@/lib/api"
-import { type FormRecord } from "@/lib/forms"
 import { Button } from "@/components/ui/button"
 import {
   ArrowLeft,
@@ -115,14 +115,14 @@ export default function PublicFormPage() {
   )
 
   const evaluateLogic = React.useCallback(
-    (block: any) => {
+    (block: FormBlock) => {
       if (!block.config?.logic || block.config.logic.length === 0) return true
 
       let isVisible = true
-      for (const rule of block.config.logic) {
+      for (const rule of block.config.logic as LogicRule[]) {
         if (!rule.conditions || rule.conditions.length === 0) continue
 
-        const conditionResults = rule.conditions.map((cond: any) => {
+        const conditionResults = rule.conditions.map((cond: LogicCondition) => {
           const val = answers[cond.blockId]
           const condValue = cond.value
 
