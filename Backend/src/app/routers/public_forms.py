@@ -7,10 +7,12 @@ from app.services.form_service import FormService
 from app.schemas.form import FormResponse
 from app.core.mongodb import get_mongo_db
 from app.services.email_service import send_otp_email
+from app.core.email_templates import get_submission_template
 import resend
 from app.core.config import settings
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 router = APIRouter()
 
@@ -118,13 +120,30 @@ async def email_submission_copy(
         raise HTTPException(404, "Submission not found")
 
     # Map answers to labels
-    blocks = {b["id"]: b["label"] for b in form.schema_snapshot.get("blocks", [])}
-    html_content = "<h2>Your Form Submission</h2><ul>"
-    for block_id, answer in sub.get("answers", {}).items():
-        label = blocks.get(block_id, "Unknown Question")
+    blocks_list = form.schema_snapshot.get("blocks", [])
+    blocks_map = {b["id"]: b["label"] for b in blocks_list}
+    file_block_ids = {b["id"] for b in blocks_list if b.get("type") == "file_upload"}
+
+    answers_data = []
+    processed_answers = sub.get("answers", {})
+
+    for block_id, answer in processed_answers.items():
+        if block_id.endswith("_filename"):
+            continue
+
+        label = blocks_map.get(block_id, "Unknown Question")
         ans_str = ", ".join(answer) if isinstance(answer, list) else str(answer)
-        html_content += f"<li><strong>{label}</strong>: {ans_str}</li>"
-    html_content += "</ul>"
+
+        is_file = block_id in file_block_ids
+        filename = (
+            processed_answers.get(f"{block_id}_filename", "File") if is_file else None
+        )
+
+        answers_data.append(
+            {"label": label, "value": ans_str, "is_file": is_file, "filename": filename}
+        )
+
+    html_content = get_submission_template(form.name, answers_data)
 
     resend.api_key = settings.resend_api_key
     try:
@@ -147,7 +166,7 @@ async def email_submission_copy(
 def get_s3_client():
     return boto3.client(
         "s3",
-        endpoint_url="http://rustfs:9002",
+        endpoint_url="http://rustfs:9000",
         aws_access_key_id="rustfsadmin",
         aws_secret_access_key="rustfsadmin",
         region_name="us-east-1",
@@ -155,21 +174,66 @@ def get_s3_client():
     )
 
 
+@router.get("/file/{form_id}/{file_name}")
+async def redirect_to_file(form_id: str, file_name: str):
+    s3_client = get_s3_client()
+    file_key = f"{form_id}/{file_name}"
+
+    # Check if exists
+    try:
+        s3_client.head_object(Bucket="formbar", Key=file_key)
+    except:
+        raise HTTPException(404, "File not found")
+
+    # Generate a fresh presigned URL for the actual download
+    # Use the signing client logic to ensure signature matches public access
+    signing_client = boto3.client(
+        "s3",
+        endpoint_url="http://localhost:9002",
+        aws_access_key_id="rustfsadmin",
+        aws_secret_access_key="rustfsadmin",
+        region_name="us-east-1",
+        config=Config(signature_version="s3v4"),
+    )
+
+    url = signing_client.generate_presigned_url(
+        "get_object", Params={"Bucket": "formbar", "Key": file_key}, ExpiresIn=3600
+    )
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse(url=url)
+
+
 @router.post("/{form_id}/upload")
 async def upload_file(form_id: str, file: UploadFile = File(...)):
     s3_client = get_s3_client()
     try:
         s3_client.head_bucket(Bucket="formbar")
-    except Exception as e:
-        s3_client.create_bucket(Bucket="formbar")
+    except Exception:
+        try:
+            s3_client.create_bucket(Bucket="formbar")
+        except Exception as e:
+            print(f"Failed to create bucket: {e}")
 
-    file_key = f"{form_id}/{uuid.uuid4()}-{file.filename}"
-    s3_client.upload_fileobj(file.file, "formbar", file_key)
-    # The public URL on port 9001 (s3 browser/API proxy if rustfs serves GETs)
-    # Or just returning the presigned url
-    url = s3_client.generate_presigned_url(
-        "get_object", Params={"Bucket": "formbar", "Key": file_key}, ExpiresIn=3600
+    # Create a unique but readable file name
+    unique_id = str(uuid.uuid4())[:8]
+    safe_filename = f"{unique_id}-{file.filename}"
+    file_key = f"{form_id}/{safe_filename}"
+
+    import io
+
+    file_content = await file.read()
+    file_obj = io.BytesIO(file_content)
+
+    s3_client.upload_fileobj(file_obj, "formbar", file_key)
+
+    # Return a clean internal redirection URL and the original filename
+    API_BASE_URL = (
+        settings.api_v1_str
+        if hasattr(settings, "api_v1_str")
+        else "http://localhost:8000"
     )
-    # Rewrite rustfs to localhost since browser fetches it directly
-    url = url.replace("http://rustfs:9002", "http://localhost:9002")
-    return {"url": url}
+    # For the frontend, we just need the path to our redirector
+    short_url = f"{API_BASE_URL}/f/file/{form_id}/{safe_filename}"
+
+    return {"url": short_url, "filename": file.filename}

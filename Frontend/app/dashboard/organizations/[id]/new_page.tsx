@@ -38,14 +38,14 @@ export default function OrganizationFormsPage() {
       <main className="mx-auto mt-4 flex w-full max-w-[1240px] flex-1 flex-col gap-6 p-6 md:p-12">
         <h1 className="text-[28px] font-medium tracking-tight">Forms</h1>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative w-full max-w-[340px]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-full sm:max-w-[340px]">
               <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search for a form"
-                className="w-[280px] rounded-[6px] border border-border bg-transparent py-[9px] pr-4 pl-10 text-[14px] transition-colors placeholder:text-muted-foreground focus:border-border focus:outline-none"
+                className="w-full rounded-[6px] border border-border bg-transparent py-[9px] pr-4 pl-10 text-[14px] transition-colors placeholder:text-muted-foreground focus:border-border focus:outline-none"
               />
             </div>
 

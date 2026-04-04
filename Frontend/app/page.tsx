@@ -234,10 +234,122 @@ const features = [
   },
 ]
 
+// Standalone component for remote cursors to prevent full page re-renders
+const RemoteCursors = React.memo(
+  ({
+    cursors,
+  }: {
+    cursors: Record<string, { x: number; y: number; color: string }>
+  }) => {
+    return (
+      <>
+        {Object.entries(cursors).map(([id, cursor]) => (
+          <div
+            key={id}
+            className="pointer-events-none fixed z-[100] transition-all duration-100 ease-out"
+            style={{
+              left: cursor.x,
+              top: cursor.y,
+              color: cursor.color,
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              stroke="white"
+              strokeWidth="1.5"
+              className="drop-shadow-sm"
+            >
+              <path d="M5.653 3.123l13.791 8.924a.5.5 0 0 1-.014.858L5.653 21.877a.5.5 0 0 1-.73-.577l2.218-8.15a.5.5 0 0 0 0-.25l-2.218-8.15a.5.5 0 0 1 .73-.577z" />
+            </svg>
+          </div>
+        ))}
+      </>
+    )
+  }
+)
+
+RemoteCursors.displayName = "RemoteCursors"
+
 export default function Page() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(
     null
+  )
+
+  // Anonymous multiplayer cursors
+  const [remoteCursors, setRemoteCursors] = React.useState<
+    Record<string, { x: number; y: number; color: string }>
+  >({})
+  const myId = React.useMemo(() => Math.random().toString(36).substring(7), [])
+  const wsRef = React.useRef<WebSocket | null>(null)
+  const lastSendTime = React.useRef<number>(0)
+
+  React.useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+    const host = process.env.NEXT_PUBLIC_API_BASE_URL
+      ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/^https?:\/\//, "")
+      : "localhost:8000"
+
+    const ws = new WebSocket(`${protocol}//${host}/homepage/ws`)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      // Send initial position
+      ws.send(
+        JSON.stringify({
+          userId: myId,
+          x: -100, // Offscreen initially
+          y: -100,
+          color: `hsl(${parseInt(myId, 36) % 360}, 70%, 60%)`,
+        })
+      )
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.userId !== myId) {
+          setRemoteCursors((prev) => ({
+            ...prev,
+            [data.userId]: { x: data.x, y: data.y, color: data.color },
+          }))
+        }
+      } catch (e) {}
+    }
+
+    // Cleanup stale cursors every 10 seconds
+    const interval = setInterval(() => {
+      setRemoteCursors({})
+    }, 10000)
+
+    return () => {
+      ws.close()
+      clearInterval(interval)
+    }
+  }, [myId])
+
+  const handleMouseMove = React.useCallback(
+    (e: React.MouseEvent) => {
+      const now = Date.now()
+      // Throttle to ~20fps (50ms) to prevent UI lag and network saturation
+      if (now - lastSendTime.current < 50) return
+
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            userId: myId,
+            x: e.clientX,
+            y: e.clientY,
+            color: `hsl(${parseInt(myId, 36) % 360}, 70%, 60%)`,
+          })
+        )
+        lastSendTime.current = now
+      }
+    },
+    [myId]
   )
 
   React.useEffect(() => {
@@ -252,7 +364,12 @@ export default function Page() {
   }, [router])
 
   return (
-    <main className="relative min-h-svh overflow-hidden bg-gradient-to-br from-primary/15 via-background to-background text-foreground">
+    <main
+      onMouseMove={handleMouseMove}
+      className="relative min-h-svh overflow-hidden bg-gradient-to-br from-primary/15 via-background to-background text-foreground"
+    >
+      <RemoteCursors cursors={remoteCursors} />
+
       <div className="relative mx-auto flex w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         <header className="relative z-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

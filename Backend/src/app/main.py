@@ -1,8 +1,9 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import json
 
 from app.core.database import connect_to_db, close_db_connection
 from app.core.mongodb import connect_to_mongo, close_mongo_connection
@@ -39,3 +40,28 @@ app.include_router(
 )
 app.include_router(forms_router, prefix="/forms", tags=["forms"])
 app.include_router(public_forms_router, prefix="/f", tags=["public_forms"])
+
+# Anonymous Homepage Multiplayer
+homepage_connections: list[WebSocket] = []
+
+
+@app.websocket("/homepage/ws")
+async def homepage_ws(websocket: WebSocket):
+    await websocket.accept()
+    homepage_connections.append(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Broadcast to everyone else
+            for conn in homepage_connections:
+                if conn != websocket:
+                    try:
+                        await conn.send_text(data)
+                    except:
+                        pass
+    except WebSocketDisconnect:
+        if websocket in homepage_connections:
+            homepage_connections.remove(websocket)
+    except Exception:
+        if websocket in homepage_connections:
+            homepage_connections.remove(websocket)

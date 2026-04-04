@@ -17,9 +17,11 @@ export type FormBlockConfig = {
   helperText?: string | null
   minLength?: number | null
   maxLength?: number | null
+  validationType?: string | null
   min?: number | null
   max?: number | null
   options?: Array<{ label: string; value: string }> | null
+  allowMultiple?: boolean
   maxFileSizeStr?: string | null
   allowedFileTypes?: string[] | null
   logic?: LogicRule[] | null
@@ -52,6 +54,7 @@ export type FormRecord = {
   slug: string
   is_quiz: boolean
   expires_at: string | null
+  redirect_url: string | null
   schema_snapshot: FormSchemaSnapshot
   created_at: string
   updated_at: string

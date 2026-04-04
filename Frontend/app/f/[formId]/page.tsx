@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { apiFetch } from "@/lib/api"
 import { type FormRecord } from "@/lib/forms"
 import { Button } from "@/components/ui/button"
@@ -11,11 +11,13 @@ import {
   Loader2,
   CheckCircle2,
   Mail,
+  X,
+  Plus,
 } from "lucide-react"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { QRCodeSVG } from "qrcode.react"
-import { format, differenceInSeconds } from "date-fns"
+import { ThemeToggle } from "@/components/theme-toggle"
 import confetti from "canvas-confetti"
 
 function cn(...inputs: ClassValue[]) {
@@ -24,26 +26,32 @@ function cn(...inputs: ClassValue[]) {
 
 const themeClasses = {
   minimal: "bg-background text-foreground border-border",
-  playful: "bg-[#fdf8f5] text-[#2d3748] border-[#fbd38d]",
-  corporate: "bg-[#f8fafc] text-[#0f172a] border-[#cbd5e1]",
+  playful:
+    "bg-[#fdf8f5] text-[#2d3748] border-[#fbd38d] dark:bg-[#0a0a0a] dark:text-[#fdf8f5] dark:border-[#ed8936]",
+  corporate:
+    "bg-[#f8fafc] text-[#0f172a] border-[#cbd5e1] dark:bg-[#0a0a0a] dark:text-[#f8fafc] dark:border-[#475569]",
 }
 
 const buttonClasses = {
   minimal: "bg-primary text-primary-foreground hover:bg-primary/90",
-  playful: "bg-[#ed8936] text-white hover:bg-[#dd6b20] rounded-2xl font-bold",
+  playful:
+    "bg-[#ed8936] text-white hover:bg-[#dd6b20] rounded-2xl font-bold dark:bg-[#f6ad55] dark:text-black",
   corporate:
-    "bg-[#1e293b] text-white hover:bg-[#0f172a] rounded-sm uppercase tracking-wide",
+    "bg-[#1e293b] text-white hover:bg-[#0f172a] rounded-sm uppercase tracking-wide dark:bg-[#334155] dark:text-white",
 }
 
 const inputClasses = {
   minimal: "border-input bg-background focus:border-ring rounded-[8px]",
   playful:
-    "border-[#fbd38d] bg-white focus:border-[#ed8936] rounded-2xl shadow-sm text-lg",
-  corporate: "border-[#cbd5e1] bg-white focus:border-[#475569] rounded-sm",
+    "border-[#fbd38d] bg-white focus:border-[#ed8936] rounded-2xl shadow-sm text-lg dark:bg-[#1a1a1a] dark:border-[#ed8936] dark:text-white",
+  corporate:
+    "border-[#cbd5e1] bg-white focus:border-[#475569] rounded-sm dark:bg-[#1a1a1a] dark:border-[#475569] dark:text-white",
 }
 
 export default function PublicFormPage() {
   const params = useParams<{ formId: string }>()
+  const searchParams = useSearchParams()
+  const isEmbed = searchParams.get("embed") === "true"
   const [form, setForm] = React.useState<FormRecord | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -52,31 +60,42 @@ export default function PublicFormPage() {
   >({})
   const [currentStep, setCurrentStep] = React.useState(0)
   const [timeLeft, setTimeLeft] = React.useState<number | null>(null)
-
-  const handleNext = React.useCallback(() => {
-    setCurrentStep((s) => s + 1)
-  }, [])
-
-  const handleBack = React.useCallback(() => {
-    if (currentStep > 0) setCurrentStep((s) => s - 1)
-  }, [currentStep])
-
-  React.useEffect(() => {
-    if (timeLeft === null) return
-    if (timeLeft <= 0) {
-      handleNext()
-      return
-    }
-    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
-    return () => clearTimeout(timer)
-  }, [timeLeft, handleNext])
-
   const [uploading, setUploading] = React.useState<Record<string, boolean>>({})
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [submissionId, setSubmissionId] = React.useState<string | null>(null)
   const [email, setEmail] = React.useState("")
   const [isEmailing, setIsEmailing] = React.useState(false)
   const [emailSent, setEmailSent] = React.useState(false)
+
+  const [validationError, setValidationError] = React.useState<string | null>(
+    null
+  )
+
+  const validateInput = (value: string, block: any): string | null => {
+    if (block.config?.required && !value) return "This field is required"
+    if (block.config?.maxLength && value.length > block.config.maxLength) {
+      return `Maximum ${block.config.maxLength} characters allowed`
+    }
+    if (block.config?.validationType === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (value && !emailRegex.test(value)) return "Invalid email address"
+    }
+    if (block.config?.validationType === "number") {
+      if (value && isNaN(Number(value))) return "Must be a number"
+    }
+    if (block.config?.validationType === "url") {
+      try {
+        if (value) new URL(value)
+      } catch (e) {
+        return "Invalid URL"
+      }
+    }
+    return null
+  }
+
+  const handleBack = React.useCallback(() => {
+    if (currentStep > 0) setCurrentStep((s) => s - 1)
+  }, [currentStep])
 
   React.useEffect(() => {
     void apiFetch<FormRecord>(`/f/${params.formId}`)
@@ -87,39 +106,66 @@ export default function PublicFormPage() {
       .finally(() => setLoading(false))
   }, [params.formId])
 
+  const parseMentions = React.useCallback(
+    (text: string) => {
+      if (!text) return ""
+      let parsed = text
+      const regex = /\{\{([^}]+)\}\}/g
+      let match
+      while ((match = regex.exec(text)) !== null) {
+        const blockId = match[1]
+        const answer = answers[blockId]
+        const replacement = Array.isArray(answer)
+          ? answer.join(", ")
+          : answer || `[Blank]`
+        parsed = parsed.replace(match[0], String(replacement))
+      }
+      return parsed
+    },
+    [answers]
+  )
+
   const evaluateLogic = React.useCallback(
     (block: any) => {
       if (!block.config?.logic || block.config.logic.length === 0) return true
 
       let isVisible = true
       for (const rule of block.config.logic) {
+        if (!rule.conditions || rule.conditions.length === 0) continue
+
         const conditionResults = rule.conditions.map((cond: any) => {
           const val = answers[cond.blockId]
-          if (val === undefined) return false
+          const condValue = cond.value
+
           switch (cond.operator) {
             case "equals":
-              return val === cond.value
+              return String(val || "") === String(condValue || "")
             case "not_equals":
-              return val !== cond.value
+              return String(val || "") !== String(condValue || "")
             case "contains":
-              return String(val)
+              return String(val || "")
                 .toLowerCase()
-                .includes(String(cond.value).toLowerCase())
+                .includes(String(condValue || "").toLowerCase())
             case "is_empty":
-              return !val || val.length === 0
+              return !val || (Array.isArray(val) && val.length === 0)
             case "is_not_empty":
-              return val && val.length > 0
+              return !!val && (!Array.isArray(val) || val.length > 0)
             default:
               return false
           }
         })
+
         const rulePassed =
           rule.conditionMatch === "all"
             ? conditionResults.every(Boolean)
             : conditionResults.some(Boolean)
-        if (rulePassed && rule.action === "hide") isVisible = false
-        else if (rulePassed && rule.action === "show") isVisible = true
-        else if (!rulePassed && rule.action === "show") isVisible = false
+
+        if (rulePassed) {
+          if (rule.action === "hide") isVisible = false
+          if (rule.action === "show") isVisible = true
+        } else {
+          if (rule.action === "show") isVisible = false
+        }
       }
       return isVisible
     },
@@ -131,6 +177,29 @@ export default function PublicFormPage() {
     () => blocks.filter((b) => evaluateLogic(b)),
     [blocks, evaluateLogic]
   )
+
+  const handleNext = React.useCallback(() => {
+    const block = visibleBlocks[currentStep]
+    if (block) {
+      const error = validateInput(String(answers[block.id] || ""), block)
+      if (error) {
+        setValidationError(error)
+        return
+      }
+    }
+    setValidationError(null)
+    setCurrentStep((s) => s + 1)
+  }, [currentStep, visibleBlocks, answers])
+
+  React.useEffect(() => {
+    if (timeLeft === null) return
+    if (timeLeft <= 0) {
+      handleNext()
+      return
+    }
+    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [timeLeft, handleNext])
 
   React.useEffect(() => {
     if (!form || !form.is_quiz) return
@@ -168,19 +237,6 @@ export default function PublicFormPage() {
   const bClass = buttonClasses[theme] || buttonClasses.minimal
   const iClass = inputClasses[theme] || inputClasses.minimal
 
-  const parseMentions = (text: string) => {
-    if (!text) return ""
-    let parsed = text
-    const regex = /\{\{([^}]+)\}\}/g
-    let match
-    while ((match = regex.exec(text)) !== null) {
-      const blockId = match[1]
-      const answer = answers[blockId]
-      parsed = parsed.replace(match[0], answer ? String(answer) : `[Blank]`)
-    }
-    return parsed
-  }
-
   const isSummaryStep = currentStep >= visibleBlocks.length
 
   const handleAnswer = (blockId: string, value: string | string[]) => {
@@ -199,9 +255,13 @@ export default function PublicFormPage() {
       const res = await fetch(`${API_BASE_URL}/f/${form.id}/upload`, {
         method: "POST",
         body: formData,
+        credentials: "include",
       })
+      if (!res.ok) throw new Error("Upload failed")
       const data = await res.json()
+      // Store the filename as well for better UI
       handleAnswer(blockId, data.url)
+      handleAnswer(`${blockId}_filename`, data.filename)
     } catch (e) {
       alert("Upload failed")
     } finally {
@@ -221,6 +281,12 @@ export default function PublicFormPage() {
       )
       setSubmissionId(res.id)
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+
+      if (form.redirect_url) {
+        setTimeout(() => {
+          window.location.href = form.redirect_url!
+        }, 1500)
+      }
     } catch (err) {
       alert(
         "Failed to submit: " +
@@ -308,10 +374,16 @@ export default function PublicFormPage() {
   return (
     <div
       className={cn(
-        "flex min-h-screen flex-col items-center justify-center p-4 transition-colors duration-300 md:p-8",
+        "flex min-h-screen flex-col items-center justify-center transition-colors duration-300",
+        isEmbed ? "p-0" : "p-4 md:p-8",
         tClass
       )}
     >
+      {!isEmbed && (
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
+      )}
       <div className="w-full max-w-2xl rounded-[20px] border border-inherit bg-inherit p-6 text-inherit shadow-lg md:p-10">
         <div className="mb-8">
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -351,9 +423,22 @@ export default function PublicFormPage() {
                     </p>
                     <div className="flex items-start justify-between gap-4">
                       <p className="text-lg font-medium">
-                        {Array.isArray(answer)
-                          ? answer.join(", ")
-                          : answer || "—"}
+                        {block.type === "file_upload" ? (
+                          answers[`${block.id}_filename`] ? (
+                            <span className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">
+                                File:
+                              </span>{" "}
+                              {answers[`${block.id}_filename`]}
+                            </span>
+                          ) : (
+                            "—"
+                          )
+                        ) : Array.isArray(answer) ? (
+                          answer.join(", ")
+                        ) : (
+                          answer || "—"
+                        )}
                       </p>
                       <button
                         onClick={() => setCurrentStep(idx)}
@@ -400,6 +485,8 @@ export default function PublicFormPage() {
 
             {(() => {
               const block = visibleBlocks[currentStep]
+              if (!block) return null
+
               if (block.type === "h1")
                 return (
                   <h1 className="mb-8 text-4xl font-bold">
@@ -423,7 +510,7 @@ export default function PublicFormPage() {
                 <div className="mb-8">
                   <label className="mb-4 block text-2xl leading-tight font-semibold">
                     {parseMentions(block.label)}
-                    {block.config.required && (
+                    {block.config?.required && (
                       <span className="ml-1 text-destructive">*</span>
                     )}
                   </label>
@@ -435,9 +522,9 @@ export default function PublicFormPage() {
                         "w-full border px-4 py-4 text-xl transition outline-none",
                         iClass
                       )}
-                      placeholder={
-                        block.config.placeholder || "Type your answer here..."
-                      }
+                      placeholder={parseMentions(
+                        block.config?.placeholder || "Type your answer here..."
+                      )}
                       value={(answers[block.id] as string) || ""}
                       onChange={(e) => handleAnswer(block.id, e.target.value)}
                       onKeyDown={(e) => {
@@ -452,9 +539,9 @@ export default function PublicFormPage() {
                         "min-h-[150px] w-full resize-none border px-4 py-4 text-lg transition outline-none",
                         iClass
                       )}
-                      placeholder={
-                        block.config.placeholder || "Type your answer here..."
-                      }
+                      placeholder={parseMentions(
+                        block.config?.placeholder || "Type your answer here..."
+                      )}
                       value={(answers[block.id] as string) || ""}
                       onChange={(e) => handleAnswer(block.id, e.target.value)}
                       autoFocus
@@ -462,7 +549,7 @@ export default function PublicFormPage() {
                   )}
                   {block.type === "checkbox" && (
                     <div className="space-y-3">
-                      {(block.config.options || []).map((opt) => {
+                      {(block.config?.options || []).map((opt) => {
                         const isChecked =
                           (answers[block.id] as string[])?.includes(
                             opt.value
@@ -506,7 +593,7 @@ export default function PublicFormPage() {
                   )}
                   {block.type === "multiple_choice" && (
                     <div className="space-y-3">
-                      {(block.config.options || []).map((opt) => {
+                      {(block.config?.options || []).map((opt) => {
                         const isChecked = answers[block.id] === opt.value
                         return (
                           <label
@@ -542,7 +629,7 @@ export default function PublicFormPage() {
                       onChange={(e) => handleAnswer(block.id, e.target.value)}
                     >
                       <option value="">Select an option</option>
-                      {(block.config.options || []).map((opt) => (
+                      {(block.config?.options || []).map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
                         </option>
@@ -582,29 +669,64 @@ export default function PublicFormPage() {
                   {block.type === "file_upload" && (
                     <div
                       className={cn(
-                        "flex w-full flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-8 text-center",
-                        iClass
+                        "flex w-full flex-col items-center justify-center rounded-[12px] border-2 border-dashed p-8 text-center transition-all",
+                        iClass,
+                        answers[block.id] ? "border-primary bg-primary/5" : ""
                       )}
                     >
                       {answers[block.id] ? (
-                        <a
-                          href={answers[block.id] as string}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-medium break-all text-primary underline"
-                        >
-                          View uploaded file
-                        </a>
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-primary">
+                            <span className="max-w-[200px] truncate font-medium">
+                              {(answers[`${block.id}_filename`] as string) ||
+                                "File uploaded"}
+                            </span>
+                            <button
+                              onClick={() => {
+                                handleAnswer(block.id, "")
+                                handleAnswer(`${block.id}_filename`, "")
+                              }}
+                              className="ml-2 rounded-full p-1 hover:bg-primary/20"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                          <a
+                            href={answers[block.id] as string}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-muted-foreground underline hover:text-primary"
+                          >
+                            View file
+                          </a>
+                        </div>
                       ) : uploading[block.id] ? (
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <p className="text-sm text-muted-foreground text-primary">
+                            Uploading...
+                          </p>
+                        </div>
                       ) : (
-                        <input
-                          type="file"
-                          onChange={(e) => {
-                            if (e.target.files?.[0])
-                              handleFileUpload(block.id, e.target.files[0])
-                          }}
-                        />
+                        <label className="flex cursor-pointer flex-col items-center gap-2">
+                          <div className="rounded-full bg-muted p-3">
+                            <Plus className="size-6 text-muted-foreground" />
+                          </div>
+                          <span className="font-medium">
+                            Click to upload or drag and drop
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Maximum file size: 10MB
+                          </span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files?.[0])
+                                handleFileUpload(block.id, e.target.files[0])
+                            }}
+                          />
+                        </label>
                       )}
                     </div>
                   )}
@@ -612,14 +734,14 @@ export default function PublicFormPage() {
                     <div className="flex flex-col items-center space-y-6">
                       <div className="inline-block rounded-xl border border-border bg-white p-4 shadow-sm">
                         <QRCodeSVG
-                          value={`upi://pay?pa=${block.config.upiId}&pn=Merchant&am=${parseMentions(block.config.upiAmount || "0")}&cu=INR`}
+                          value={`upi://pay?pa=${block.config?.upiId}&pn=Merchant&am=${parseMentions(block.config?.upiAmount || "0")}&cu=INR`}
                           size={200}
                           level="Q"
                         />
                       </div>
                       <p className="text-sm font-medium">
                         Scan to pay{" "}
-                        {parseMentions(block.config.upiAmount || "0")} INR via
+                        {parseMentions(block.config?.upiAmount || "0")} INR via
                         UPI
                       </p>
 
@@ -677,6 +799,12 @@ export default function PublicFormPage() {
                 </div>
               )
             })()}
+
+            {validationError && (
+              <p className="mb-4 animate-in text-sm font-medium text-destructive fade-in slide-in-from-top-1">
+                {validationError}
+              </p>
+            )}
 
             <div className="flex gap-3">
               {currentStep > 0 && (

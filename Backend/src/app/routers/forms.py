@@ -14,13 +14,111 @@ import asyncpg
 
 from app.core.security import decode_token
 from app.core.database import get_db
+from app.core.mongodb import get_mongo_db
 from app.dependencies import get_current_user
 from app.schemas.auth import AuthUser
 from app.services.form_service import FormService
 from app.services.websocket_manager import manager
 from app.schemas.form import FormResponse, FormCreate, FormEventCreate
 
+from fastapi.responses import StreamingResponse
+import io
+import csv
+
 router = APIRouter()
+
+# ... existing code ...
+
+
+@router.delete("/{form_id}")
+async def delete_form(
+    form_id: str,
+    conn: asyncpg.Connection = Depends(get_db),
+    user: AuthUser = Depends(get_current_user),
+):
+    form = await FormService.get_form(form_id=form_id)
+    if not form:
+        raise HTTPException(404, "Form not found")
+    await _ensure_org_membership(conn, str(form.organization_id), str(user.id))
+
+    success = await FormService.delete_form(form_id)
+    if not success:
+        raise HTTPException(500, "Failed to delete form")
+    return {"message": "Form deleted"}
+
+
+@router.get("/{form_id}/submissions")
+async def list_submissions(
+    form_id: str,
+    conn: asyncpg.Connection = Depends(get_db),
+    user: AuthUser = Depends(get_current_user),
+):
+    form = await FormService.get_form(form_id=form_id)
+    if not form:
+        raise HTTPException(404, "Form not found")
+    await _ensure_org_membership(conn, str(form.organization_id), str(user.id))
+
+    db = get_mongo_db()
+    cursor = db.submissions.find({"form_id": form_id}).sort("submitted_at", -1)
+    subs = await cursor.to_list(length=1000)
+    for s in subs:
+        s["id"] = str(s["_id"])
+        del s["_id"]
+        if "submitted_at" in s:
+            s["submitted_at"] = s["submitted_at"].isoformat()
+    return subs
+
+
+@router.get("/{form_id}/export/csv")
+async def export_submissions_csv(
+    form_id: str,
+    conn: asyncpg.Connection = Depends(get_db),
+    user: AuthUser = Depends(get_current_user),
+):
+    form = await FormService.get_form(form_id=form_id)
+    if not form:
+        raise HTTPException(404, "Form not found")
+    await _ensure_org_membership(conn, str(form.organization_id), str(user.id))
+
+    db = get_mongo_db()
+    cursor = db.submissions.find({"form_id": form_id}).sort("submitted_at", -1)
+    subs = await cursor.to_list(length=10000)
+
+    # Get block labels for headers
+    blocks = form.schema_snapshot.get("blocks", [])
+    headers = ["Submission ID", "Submitted At", "Score"]
+    block_ids = []
+    for b in blocks:
+        if b["type"] not in ["h1", "h2", "paragraph"]:
+            headers.append(b["label"] or b["id"])
+            block_ids.append(b["id"])
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+
+    for s in subs:
+        row = [
+            str(s["_id"]),
+            s.get("submitted_at").isoformat() if s.get("submitted_at") else "",
+            s.get("score", 0),
+        ]
+        answers = s.get("answers", {})
+        for bid in block_ids:
+            val = answers.get(bid, "")
+            if isinstance(val, list):
+                val = ", ".join(val)
+            row.append(val)
+        writer.writerow(row)
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=submissions_{form.slug}.csv"
+        },
+    )
 
 
 def _email_initials(email: str) -> str:

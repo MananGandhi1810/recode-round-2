@@ -21,17 +21,31 @@ class FormBlockConfig(BaseModel):
     # Text Input specific
     minLength: Optional[int] = None
     maxLength: Optional[int] = None
+    validationType: Optional[str] = None  # e.g. "email", "number", "url"
 
     # Number specific
     min: Optional[float] = None
     max: Optional[float] = None
 
-    # Select / Radio specific
+    # Select / Radio / Checkbox specific
     options: Optional[List[FormBlockOptions]] = None
+    allowMultiple: bool = False  # for dropdown/select
 
     # File specific
     maxFileSizeStr: Optional[str] = None  # e.g. "5MB"
     allowedFileTypes: Optional[List[str]] = None  # e.g. [".pdf", ".jpg"]
+
+    # UPI specific
+    upiId: Optional[str] = None
+    upiAmount: Optional[str] = None
+
+    # Quiz specific
+    correctAnswer: Optional[Any] = None
+    points: int = 1
+    timerSeconds: Optional[int] = None
+
+    # Conditional Logic
+    logic: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class FormBlock(BaseModel):
@@ -67,6 +81,7 @@ class FormResponse(BaseModel):
     theme: str = "minimal"
     is_quiz: bool = False
     expires_at: Optional[datetime] = None
+    redirect_url: Optional[str] = None
     schema_snapshot: Dict[str, Any]
     created_at: datetime
     updated_at: datetime
@@ -83,6 +98,7 @@ class FormUpdate(BaseModel):
     slug: Optional[str] = None
     is_quiz: Optional[bool] = None
     expires_at: Optional[datetime] = None
+    redirect_url: Optional[str] = None
 
 
 class FormEventCreate(BaseModel):

@@ -91,6 +91,17 @@ class FormService:
         return {"blocks": blocks}
 
     @staticmethod
+    async def delete_form(form_id: str) -> bool:
+        db = get_mongo_db()
+        result = await db.forms.delete_one({"_id": form_id})
+        if result.deleted_count > 0:
+            # Cleanup events and submissions
+            await db.form_events.delete_many({"form_id": form_id})
+            await db.submissions.delete_many({"form_id": form_id})
+            return True
+        return False
+
+    @staticmethod
     async def process_event(
         form_id: str,
         user_id: Optional[str],
@@ -112,6 +123,7 @@ class FormService:
             slug = event_in.payload.get("slug")
             is_quiz = event_in.payload.get("is_quiz")
             expires_at = event_in.payload.get("expires_at")
+            redirect_url = event_in.payload.get("redirect_url")
 
             if isinstance(name, str):
                 update_fields["name"] = name.strip() or doc["name"]
@@ -128,8 +140,17 @@ class FormService:
                 )
                 if not exists:
                     update_fields["slug"] = slug
-            if isinstance(is_quiz, bool):
-                update_fields["is_quiz"] = is_quiz
+
+            # Only allow setting is_quiz if it wasn't already set to True or if it's the same value
+            # Actually, user said: "there should not be option to change existing form to quiz or vice versa"
+            # This usually means once created, it's immutable.
+            # We'll ignore the is_quiz field in updates if it differs from current.
+            if is_quiz is not None and is_quiz != doc.get("is_quiz", False):
+                # Optionally raise error or just skip. We'll skip for now to avoid breaking existing frontend logic.
+                pass
+
+            if isinstance(redirect_url, str) or redirect_url is None:
+                update_fields["redirect_url"] = redirect_url
 
             if expires_at is not None:
                 try:
