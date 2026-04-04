@@ -12,6 +12,7 @@ import {
   Grid3X3,
   List,
   FileText,
+  UserPlus,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -42,6 +43,14 @@ export default function UserOrganizationsPage() {
   const [showNewForm, setShowNewForm] = React.useState(false)
   const [newFormName, setNewFormName] = React.useState("")
   const [newFormDescription, setNewFormDescription] = React.useState("")
+  
+  // Invitation State
+  const [showInviteMember, setShowInviteMember] = React.useState(false)
+  const [inviteEmail, setInviteEmail] = React.useState("")
+  const [inviteRole, setInviteRole] = React.useState("member")
+  const [inviting, setInviting] = React.useState(false)
+  const [inviteMessage, setInviteMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null)
+
   const [formsByOrganization, setFormsByOrganization] = React.useState<
     Record<string, FormRecord[]>
   >({})
@@ -146,6 +155,31 @@ export default function UserOrganizationsPage() {
     }
   }
 
+  async function inviteMember(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedOrganizationId || !inviteEmail.trim()) return
+
+    setInviting(true)
+    setInviteMessage(null)
+
+    try {
+      await apiFetch(`/organizations/${selectedOrganizationId}/members`, {
+        method: "POST",
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          role: inviteRole,
+        }),
+      })
+      setInviteMessage({ type: 'success', text: 'Member invited successfully.' })
+      setInviteEmail("")
+      setShowInviteMember(false)
+    } catch (error) {
+      setInviteMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to invite member.' })
+    } finally {
+      setInviting(false)
+    }
+  }
+
   async function createForm(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!selectedOrganizationId || !newFormName.trim()) {
@@ -195,13 +229,13 @@ export default function UserOrganizationsPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-sans text-foreground">
-      <main className="mx-auto mt-4 w-full max-w-350 flex-1 p-6 md:p-12">
+      <main className="mx-auto mt-4 w-full max-w-[1240px] flex-1 p-6 md:p-12">
         <section>
           <h1 className="mb-8 text-[32px] font-medium tracking-tight">
             Your Organizations
           </h1>
           <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-            <div className="relative w-full max-w-105">
+            <div className="relative w-full max-w-[340px]">
               <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={organizationQuery}
@@ -291,34 +325,87 @@ export default function UserOrganizationsPage() {
         </section>
 
         <section className="mt-14">
-          <div className="mb-8 flex items-center justify-between gap-3">
-            <h2 className="text-[32px] font-medium tracking-tight">Forms</h2>
-            <Button
-              onClick={() => setShowNewForm((current) => !current)}
-              disabled={!selectedOrganizationId}
-              className="h-9.5 rounded-[8px] border-0 bg-primary px-4 text-[14px] font-medium text-primary-foreground shadow-none hover:bg-primary/90"
-            >
-              <Plus className="mr-1.5 h-4.5 w-4.5" />
-              New form
-            </Button>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-[32px] font-medium tracking-tight">Workspace</h2>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowInviteMember((current) => !current)}
+                disabled={!selectedOrganizationId}
+                variant="outline"
+                className="h-9.5 rounded-[8px] px-4 text-[14px] font-medium shadow-none"
+              >
+                <UserPlus className="mr-1.5 h-4.5 w-4.5" />
+                Invite member
+              </Button>
+              <Button
+                onClick={() => setShowNewForm((current) => !current)}
+                disabled={!selectedOrganizationId}
+                className="h-9.5 rounded-[8px] border-0 bg-primary px-4 text-[14px] font-medium text-primary-foreground shadow-none hover:bg-primary/90"
+              >
+                <Plus className="mr-1.5 h-4.5 w-4.5" />
+                New form
+              </Button>
+            </div>
           </div>
 
           {!selectedOrganization ? (
             <div className="rounded-[10px] border border-border bg-card py-12 text-center text-muted-foreground">
-              Select an organization to manage forms.
+              Select an organization to manage your workspace.
             </div>
           ) : (
             <>
-              <div className="mb-4 text-sm text-muted-foreground">
-                Managing forms for{" "}
-                <span className="font-medium text-foreground">
-                  {selectedOrganization.name}
-                </span>
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-muted-foreground">
+                <div>
+                  Managing workspace for{" "}
+                  <span className="font-medium text-foreground">
+                    {selectedOrganization.name}
+                  </span>
+                </div>
               </div>
+              
+              {inviteMessage && (
+                <div className={`mb-6 rounded-[10px] border px-4 py-3 text-sm ${inviteMessage.type === 'error' ? 'border-destructive/50 bg-destructive/10 text-destructive' : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600'}`}>
+                  {inviteMessage.text}
+                </div>
+              )}
+
+              {showInviteMember && (
+                <form
+                  onSubmit={inviteMember}
+                  className="mb-8 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4 md:flex-row"
+                >
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(event) => setInviteEmail(event.target.value)}
+                    placeholder="Member email address"
+                    className="h-10 flex-1 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
+                    required
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="h-10 rounded-[8px] border border-input bg-background px-3 text-sm transition outline-none focus:border-ring"
+                  >
+                    <option value="member">Member</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                  <Button
+                    type="submit"
+                    disabled={inviting}
+                    className="h-10 rounded-[8px] px-4"
+                  >
+                    {inviting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Invite
+                  </Button>
+                </form>
+              )}
 
               <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="relative w-full max-w-105 min-w-70">
+                  <div className="relative w-full max-w-[340px] min-w-[280px]">
                     <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <input
                       value={formQuery}
@@ -346,7 +433,7 @@ export default function UserOrganizationsPage() {
                     </select>
                   </div>
 
-                  <div className="inline-flex items-center gap-2 rounded-[8px] border border-border bg-card px-3 py-2 text-sm text-foreground">
+                  <div className="inline-flex items-center gap-2 rounded-[8px] border border-border bg-card px-3 py-2 text-sm text-foreground hidden sm:flex">
                     <ArrowDownWideNarrow className="h-4 w-4 text-muted-foreground" />
                     Sorted by name
                   </div>
@@ -422,20 +509,20 @@ export default function UserOrganizationsPage() {
                   No forms found for this organization.
                 </div>
               ) : formsView === "grid" ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {filteredForms.map((form) => (
                     <Link key={form.id} href={`/dashboard/forms/${form.id}`}>
                       <article className="rounded-[10px] border border-border/80 bg-card p-6 shadow-sm transition hover:bg-accent/60">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h3 className="text-[36px] leading-none">
+                            <h3 className="text-[28px] font-semibold leading-none">
                               {form.name.slice(0, 1).toUpperCase()}
                             </h3>
-                            <p className="mt-5 text-[36px] leading-tight font-medium tracking-tight">
+                            <p className="mt-4 text-[20px] leading-tight font-medium tracking-tight">
                               {form.name}
                             </p>
                             {form.description ? (
-                              <p className="mt-2 text-sm text-muted-foreground">
+                              <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
                                 {form.description}
                               </p>
                             ) : null}

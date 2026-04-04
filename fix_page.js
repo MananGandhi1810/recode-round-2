@@ -1,23 +1,14 @@
+const fs = require('fs');
+
+const content = `
 "use client"
 
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
-
-import {
-  ArrowRight,
-  BarChart3,
-  Blocks,
-  CheckCircle2,
-  LockKeyhole,
-  Sparkles,
-  Users,
-} from "lucide-react"
 
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { apiFetch } from "@/lib/api"
 
 const SparklesIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -126,20 +117,6 @@ const features = [
 ]
 
 export default function Page() {
-  const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null)
-
-  React.useEffect(() => {
-    apiFetch("/auth/me")
-      .then(() => {
-        setIsAuthenticated(true)
-        router.push("/dashboard")
-      })
-      .catch(() => {
-        setIsAuthenticated(false)
-      })
-  }, [router])
-
   return (
     <main className="relative min-h-svh overflow-hidden bg-gradient-to-br from-primary/15 via-background to-background text-foreground">
       <div className="relative mx-auto flex w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
@@ -156,7 +133,7 @@ export default function Page() {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button asChild variant="link" className="font-semibold text-muted-foreground hover:text-foreground">
+            <Button asChild variant="ghost" className="font-semibold text-muted-foreground hover:text-foreground">
               <Link href="/login">Log in</Link>
             </Button>
             <Button asChild className="rounded-2xl px-5 h-10 shadow-sm">
@@ -173,11 +150,13 @@ export default function Page() {
           </div>
           
           <h1 className="max-w-4xl text-5xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
-            Simple enough for anyone to use, powerful enough to run your business.
+            Build forms that feel like <br className="hidden sm:block" />
+            first-class products
           </h1>
           
           <p className="mt-8 max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-            Build AI-powered forms and accept payments instantly. Formbar is the ultimate minimalistic tool for maximum data collection without the technical headache.
+            Create AI-powered forms, collect realtime payments, and blast WhatsApp surveys automatically. 
+            Formbar is the ultimate minimalistic tool for maximum data collection.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md">
@@ -200,7 +179,7 @@ export default function Page() {
             <div className="rounded-[1.5rem] border border-border/60 bg-background/75 p-6 transition-colors duration-500">
               <div className="flex items-center gap-3 text-sm font-medium border-b border-border/60 pb-5 mb-6">
                 <div className="flex gap-1.5">
-                  <div className="size-3 rounded-full bg-border/80 outline-border"></div>
+                  <div className="size-3 rounded-full bg-border/80 outline border-border"></div>
                   <div className="size-3 rounded-full bg-border/80"></div>
                   <div className="size-3 rounded-full bg-border/80"></div>
                 </div>
@@ -282,3 +261,6 @@ export default function Page() {
     </main>
   )
 }
+\`;
+
+fs.writeFileSync('/Users/manangandhi/Coding/python_projects/recode-round-2/frontend/app/page.tsx', content, 'utf8');
