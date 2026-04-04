@@ -82,3 +82,41 @@ async def add_member(
         )
 
     return {"id": str(member_row["id"]), "role": member_row["role"]}
+
+
+import uuid
+import datetime
+import secrets
+
+async def create_invite(conn: asyncpg.Connection, user_id: str, organization_id: str, email: str, role: str) -> str:
+    # Ensure owner
+    await require_owner(conn, organization_id, user_id)
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
+    await conn.execute(
+        "INSERT INTO organization_invites (organization_id, email, role, token, expires_at, created_by_id) VALUES ($1::uuid, $2, $3, $4, $5, $6::uuid)",
+        organization_id, email.lower(), role, token, expires_at, user_id
+    )
+    return token
+
+async def get_invite_info(conn: asyncpg.Connection, token: str) -> dict:
+    row = await conn.fetchrow(
+        "SELECT i.email, i.role, i.expires_at, o.id as organization_id, o.name as org_name "
+        "FROM organization_invites i JOIN organizations o ON i.organization_id = o.id "
+        "WHERE i.token = $1", token
+    )
+    if not row:
+        raise ValueError("Invalid invite token")
+    if row["expires_at"].timestamp() < datetime.datetime.now(datetime.timezone.utc).timestamp():
+        raise ValueError("Invite has expired")
+    return dict(row)
+
+async def accept_invite(conn: asyncpg.Connection, user_id: str, token: str) -> str:
+    info = await get_invite_info(conn, token)
+    user_row = await conn.fetchrow("SELECT email FROM users WHERE id = $1::uuid", user_id)
+    # Allow if the user accepts it, optionally we could enforce email matching
+    
+    org_id = info["organization_id"]
+    await add_member(conn, str(org_id), user_row["email"], info["role"])
+    await conn.execute("DELETE FROM organization_invites WHERE token = $1", token)
+    return str(org_id)

@@ -8,6 +8,7 @@ from app.core.database import connect_to_db, close_db_connection
 from app.core.mongodb import connect_to_mongo, close_mongo_connection
 from app.routers.auth import router as auth_router
 from app.routers.forms import router as forms_router
+from app.routers.public_forms import router as public_forms_router
 from app.routers.health import router as health_router
 from app.routers.organizations import router as organizations_router
 
@@ -33,3 +34,4 @@ app.include_router(health_router)
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(organizations_router, prefix="/organizations", tags=["organizations"])
 app.include_router(forms_router, prefix="/forms", tags=["forms"])
+app.include_router(public_forms_router, prefix="/f", tags=["public_forms"])

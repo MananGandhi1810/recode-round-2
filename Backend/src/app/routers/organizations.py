@@ -62,3 +62,46 @@ async def add_org_member(
         ) from exc
 
     return await add_member(conn, organization_id, payload.email, payload.role)
+
+
+from app.services.organization_service import create_invite, get_invite_info, accept_invite
+from pydantic import BaseModel
+
+class InviteCreate(BaseModel):
+    email: str
+    role: str
+
+@router.post("/{organization_id}/invites")
+async def send_org_invite(
+    organization_id: str,
+    payload: InviteCreate,
+    conn: asyncpg.Connection = Depends(get_db),
+    user: AuthUser = Depends(get_current_user),
+):
+    try:
+        token = await create_invite(conn, str(user.id), organization_id, payload.email, payload.role)
+        # Normally send email here with Resend. For now we just return token for testing.
+        return {"message": "Invite sent", "token": token}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+@router.get("/invites/{token}")
+async def get_invite(token: str, conn: asyncpg.Connection = Depends(get_db)):
+    try:
+        info = await get_invite_info(conn, token)
+        # Strip expires_at since it's not strictly json serializable without conversion
+        return {"org_name": info["org_name"], "email": info["email"]}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+@router.post("/invites/{token}/accept")
+async def accept_org_invite(
+    token: str,
+    conn: asyncpg.Connection = Depends(get_db),
+    user: AuthUser = Depends(get_current_user),
+):
+    try:
+        org_id = await accept_invite(conn, str(user.id), token)
+        return {"organization_id": org_id}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))

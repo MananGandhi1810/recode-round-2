@@ -67,6 +67,7 @@ type WsIncoming =
   | { type: "CURSOR_LEAVE"; userId: string }
   | { type: "CURSOR_UPDATE"; cursor: CursorPoint }
   | { type: "EVENT_APPLIED"; formEvent: FormEventPayload }
+  | { type: "SCORE_UPDATE"; submission: any }
   | { type: "ERROR"; message: string }
 
 function defaultBlock(): FormBlock {
@@ -119,6 +120,7 @@ function DraggableSidebarItem({
 function BlockItem({
   block,
   allBlocks,
+  isQuiz,
   addBlockBase,
   onChange,
   onBlur,
@@ -126,6 +128,7 @@ function BlockItem({
 }: {
   block: FormBlock
   allBlocks: FormBlock[]
+  isQuiz: boolean
   addBlockBase: (index: number) => void
   onChange: (id: string, updater: (b: FormBlock) => FormBlock) => void
   onBlur: (id: string) => void
@@ -232,6 +235,11 @@ function BlockItem({
             <option value="long_text">Long Text</option>
             <option value="checkbox">Checkbox Question</option>
             <option value="multiple_choice">Multiple Choice</option>
+            <option value="dropdown">Dropdown</option>
+            <option value="date_picker">Date Picker</option>
+            <option value="rating">Rating</option>
+            <option value="file_upload">File Upload</option>
+            <option value="upi_payment">UPI Payment</option>
           </select>
           <div className="flex-1" />
           <button
@@ -299,7 +307,7 @@ function BlockItem({
           </div>
         )}
 
-        {(block.type === "checkbox" || block.type === "multiple_choice") && (
+        {(block.type === "checkbox" || block.type === "multiple_choice" || block.type === "dropdown") && (
           <div className="mt-2 space-y-2">
             {(block.config.options || [{ label: "Option 1", value: "opt1" }]).map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -334,7 +342,25 @@ function BlockItem({
           </div>
         )}
 
-        {showLogic && (
+        
+        {isQuiz && !block.type.startsWith("h") && block.type !== "paragraph" && (
+          <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-[8px] flex items-center justify-between gap-4">
+            <label className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Quiz Settings</label>
+            <div className="flex flex-wrap gap-4">
+              <input type="number" placeholder="Pts" value={block.config.points || ""} onChange={(e) => onChange(block.id, b => ({ ...b, config: { ...b.config, points: parseInt(e.target.value) || 0 } }))} onBlur={() => onBlur(block.id)} className="w-16 h-8 text-sm px-2 py-1 rounded bg-background border border-emerald-500/30 text-emerald-800" />
+              <input type="number" placeholder="Secs" value={block.config.timerSeconds || ""} onChange={(e) => onChange(block.id, b => ({ ...b, config: { ...b.config, timerSeconds: parseInt(e.target.value) || null } }))} onBlur={() => onBlur(block.id)} className="w-16 h-8 text-sm px-2 py-1 rounded bg-background border border-emerald-500/30 text-emerald-800" />
+              <input type="text" placeholder="Correct Answer" value={(block.config.correctAnswer as string) || ""} onChange={(e) => onChange(block.id, b => ({ ...b, config: { ...b.config, correctAnswer: e.target.value } }))} onBlur={() => onBlur(block.id)} className="w-40 h-8 text-sm px-2 py-1 rounded bg-background border border-emerald-500/30 text-emerald-800" />
+            </div>
+          </div>
+        )}
+
+        {block.type === "upi_payment" && (
+          <div className="mt-2 space-y-2 p-3 border border-dashed rounded-[8px] bg-muted/20">
+            <input type="text" placeholder="UPI ID (e.g. handle@bank)" value={block.config.upiId || ""} onChange={(e) => onChange(block.id, b => ({ ...b, config: { ...b.config, upiId: e.target.value } }))} onBlur={() => onBlur(block.id)} className="w-full bg-transparent border-b outline-none text-sm opacity-80 pb-1 focus:border-primary" />
+            <input type="text" placeholder="Amount (Fixed or @ mention variable)" value={block.config.upiAmount || ""} onChange={(e) => onChange(block.id, b => ({ ...b, config: { ...b.config, upiAmount: e.target.value } }))} onBlur={() => onBlur(block.id)} className="w-full bg-transparent border-b outline-none text-sm opacity-80 pb-1 focus:border-primary" />
+          </div>
+        )}
+{showLogic && (
           <div className="mt-4 rounded-md border border-border bg-card p-3 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground uppercase">
@@ -536,7 +562,13 @@ export default function FormEditorPage() {
 
   const [nameDraft, setNameDraft] = React.useState("")
   const [descriptionDraft, setDescriptionDraft] = React.useState("")
-  const [publishedDraft, setPublishedDraft] = React.useState(false)
+    const [publishedDraft, setPublishedDraft] = React.useState(false)
+  const [themeDraft, setThemeDraft] = React.useState("minimal")
+  const [slugDraft, setSlugDraft] = React.useState("")
+  const [isQuizDraft, setIsQuizDraft] = React.useState(false)
+  const [leaderboard, setLeaderboard] = React.useState<any[]>([])
+  const [expiresAtDraft, setExpiresAtDraft] = React.useState("")
+  const [activeTab, setActiveTab] = React.useState<"editor" | "settings" | "leaderboard">("editor")
   const [savingMeta, setSavingMeta] = React.useState(false)
 
   const blocks = form?.schema_snapshot.blocks ?? []
@@ -549,6 +581,10 @@ export default function FormEditorPage() {
     setNameDraft(nextForm.name)
     setDescriptionDraft(nextForm.description ?? "")
     setPublishedDraft(nextForm.is_published)
+    setThemeDraft(nextForm.theme || "minimal")
+    setSlugDraft(nextForm.slug || "")
+    setIsQuizDraft(nextForm.is_quiz || false)
+    setExpiresAtDraft(nextForm.expires_at ? new Date(nextForm.expires_at).toISOString().slice(0, 16) : "")
   }, [])
 
   const loadForm = React.useCallback(async () => {
@@ -639,6 +675,10 @@ export default function FormEditorPage() {
             const name = incoming.formEvent.payload.name
             const description = incoming.formEvent.payload.description
             const isPublished = incoming.formEvent.payload.is_published
+            const evTheme = incoming.formEvent.payload.theme
+            const evSlug = incoming.formEvent.payload.slug
+            const evIsQuiz = incoming.formEvent.payload.is_quiz
+            const evExpires = incoming.formEvent.payload.expires_at
 
             const next = {
               ...current,
@@ -647,14 +687,19 @@ export default function FormEditorPage() {
                 description === null || typeof description === "string"
                   ? description
                   : current.description,
-              is_published:
-                typeof isPublished === "boolean"
-                  ? isPublished
-                  : current.is_published,
+              is_published: typeof isPublished === "boolean" ? isPublished : current.is_published,
+              theme: typeof evTheme === "string" ? evTheme : current.theme,
+              slug: typeof evSlug === "string" ? evSlug : current.slug,
+              is_quiz: typeof evIsQuiz === "boolean" ? evIsQuiz : current.is_quiz,
+              expires_at: evExpires !== undefined ? (evExpires as string) : current.expires_at,
             }
             setNameDraft(next.name)
             setDescriptionDraft(next.description ?? "")
             setPublishedDraft(next.is_published)
+            setThemeDraft(next.theme)
+            setSlugDraft(next.slug || "")
+            setIsQuizDraft(next.is_quiz || false)
+            setExpiresAtDraft(next.expires_at ? new Date(next.expires_at as string).toISOString().slice(0, 16) : "")
             return next
           }
 
@@ -666,6 +711,20 @@ export default function FormEditorPage() {
             ...current,
             schema_snapshot: nextSnapshot,
           }
+        })
+        return
+      }
+
+            if (incoming.type === "SCORE_UPDATE") {
+        setLeaderboard((current) => {
+          const next = [...current]
+          const existing = next.findIndex(x => x.id === incoming.submission.id)
+          if (existing > -1) {
+            next[existing] = incoming.submission
+          } else {
+            next.push(incoming.submission)
+          }
+          return next.sort((a, b) => b.score - a.score)
         })
         return
       }
@@ -700,6 +759,10 @@ export default function FormEditorPage() {
         const name = event.payload.name
         const description = event.payload.description
         const isPublished = event.payload.is_published
+        const evTheme = event.payload.theme
+        const evSlug = event.payload.slug
+        const evIsQuiz = event.payload.is_quiz
+        const evExpires = event.payload.expires_at
         return {
           ...current,
           name: typeof name === "string" ? name : current.name,
@@ -707,10 +770,11 @@ export default function FormEditorPage() {
             description === null || typeof description === "string"
               ? description
               : current.description,
-          is_published:
-            typeof isPublished === "boolean"
-              ? isPublished
-              : current.is_published,
+          is_published: typeof isPublished === "boolean" ? isPublished : current.is_published,
+          theme: typeof evTheme === "string" ? evTheme : current.theme,
+          slug: typeof evSlug === "string" ? evSlug : current.slug,
+          is_quiz: typeof evIsQuiz === "boolean" ? evIsQuiz : current.is_quiz,
+          expires_at: evExpires !== undefined ? (evExpires as string) : current.expires_at,
         }
       }
 
@@ -818,6 +882,10 @@ export default function FormEditorPage() {
         name: nameDraft,
         description: descriptionDraft || null,
         is_published: publishedDraft,
+        theme: themeDraft,
+        slug: slugDraft,
+        is_quiz: isQuizDraft,
+        expires_at: expiresAtDraft ? new Date(expiresAtDraft).toISOString() : null,
       },
     }
 
@@ -832,7 +900,7 @@ export default function FormEditorPage() {
     } finally {
       setSavingMeta(false)
     }
-  }, [descriptionDraft, nameDraft, persistEvent, publishedDraft])
+  }, [descriptionDraft, nameDraft, persistEvent, publishedDraft, themeDraft, slugDraft, isQuizDraft, expiresAtDraft])
 
   const pushCursor = React.useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -939,7 +1007,7 @@ export default function FormEditorPage() {
   return (
     <main className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <Button asChild variant="ghost" className="mb-2 rounded-[8px] px-2">
               <Link href="/dashboard">
@@ -947,7 +1015,14 @@ export default function FormEditorPage() {
                 Back to dashboard
               </Link>
             </Button>
-            <h1 className="text-3xl font-semibold tracking-tight">Edit Form</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl font-semibold tracking-tight">Edit Form</h1>
+              <div className="flex bg-muted p-1 rounded-lg">
+                <button onClick={() => setActiveTab("editor")} className={`px-3 py-1 text-sm font-medium rounded-md ${activeTab === "editor" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Editor</button>
+                <button onClick={() => setActiveTab("settings")} className={`px-3 py-1 text-sm font-medium rounded-md ${activeTab === "settings" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Settings</button>
+                <button onClick={() => setActiveTab("leaderboard")} className={`px-3 py-1 text-sm font-medium rounded-md ${activeTab === "leaderboard" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>Leaderboard</button>
+              </div>
+            </div>
           </div>
           <div className="inline-flex items-center gap-2 rounded-[8px] border border-border bg-card px-3 py-2 text-sm">
             <MousePointer2 className="h-4 w-4 text-muted-foreground" />
@@ -967,6 +1042,7 @@ export default function FormEditorPage() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
+          {activeTab === "editor" && (
           <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
             <div
               ref={canvasRef}
@@ -1049,6 +1125,7 @@ export default function FormEditorPage() {
                           key={block.id}
                           block={block}
                           allBlocks={blocks}
+                          isQuiz={form.is_quiz || false}
                           addBlockBase={(idx) => void addBlock(idx)}
                           onChange={updateBlockLocal}
                           onBlur={(id) => void persistBlock(id)}
@@ -1103,21 +1180,14 @@ export default function FormEditorPage() {
                 <h3 className="font-medium">Form Elements</h3>
               </div>
               <div className="flex flex-col gap-2">
-                <DraggableSidebarItem
-                  type="short_text"
-                  label="Text Question"
-                  icon={FilePlus2}
-                />
-                <DraggableSidebarItem
-                  type="checkbox"
-                  label="Checkbox Question"
-                  icon={Check}
-                />
-                <DraggableSidebarItem
-                  type="multiple_choice"
-                  label="Multiple Choice"
-                  icon={List}
-                />
+                                <DraggableSidebarItem type="short_text" label="Text Question" icon={FilePlus2} />
+                <DraggableSidebarItem type="checkbox" label="Checkbox Question" icon={Check} />
+                <DraggableSidebarItem type="multiple_choice" label="Multiple Choice" icon={List} />
+                <DraggableSidebarItem type="dropdown" label="Dropdown" icon={List} />
+                <DraggableSidebarItem type="date_picker" label="Date Picker" icon={Check} />
+                <DraggableSidebarItem type="rating" label="Rating" icon={Check} />
+                <DraggableSidebarItem type="file_upload" label="File Upload" icon={FilePlus2} />
+                <DraggableSidebarItem type="upi_payment" label="UPI Payment" icon={Component} />
               </div>
 
               <div className="mt-6 rounded-[10px] border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -1126,8 +1196,109 @@ export default function FormEditorPage() {
               </div>
             </aside>
           </section>
+        )}
+        
+        {activeTab === "settings" && (
+          <div className="max-w-2xl bg-card border border-border rounded-[12px] p-6 shadow-sm space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold mb-1">Form Link & Access</h2>
+              <div className="space-y-4 pt-2">
+                <div>
+                  <label className="text-sm font-medium">Public URL</label>
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      readOnly
+                      className="flex-1 px-3 py-2 rounded-md border border-input bg-muted/50 text-sm"
+                      value={
+                        typeof window !== "undefined"
+                          ? form.organization_slug
+                            ? `${window.location.origin}/${form.organization_slug}/${form.slug}`
+                            : `${window.location.origin}/f/${form.id}`
+                          : ""
+                      }
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const url = form.organization_slug
+                          ? `${window.location.origin}/${form.organization_slug}/${form.slug}`
+                          : `${window.location.origin}/f/${form.id}`
+                        navigator.clipboard.writeText(url)
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                  {!form.is_published && (
+                    <p className="mt-1.5 text-xs text-amber-600 font-medium flex items-center gap-1">
+                      Note: Form must be published for the link to work.
+                    </p>
+                  )}
+                </div>
+                <div className="pt-2">
+                  <label className="text-sm font-medium">Custom Slug</label>
+                  <input type="text" className="w-full mt-1 px-3 py-2 rounded-md border border-input bg-background" value={slugDraft} onChange={(e) => setSlugDraft(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Theme</label>
+                  <select value={themeDraft} onChange={(e) => setThemeDraft(e.target.value)} className="w-full mt-1 px-3 py-2 rounded-md border border-input bg-background">
+                    <option value="minimal">Minimal</option>
+                    <option value="playful">Playful</option>
+                    <option value="corporate">Corporate</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">End Date & Time</label>
+                  <input type="datetime-local" value={expiresAtDraft} onChange={(e) => setExpiresAtDraft(e.target.value)} className="w-full mt-1 px-3 py-2 rounded-md border border-input bg-background" />
+                </div>
+                <label className="flex items-center gap-3">
+                  <input type="checkbox" checked={publishedDraft} onChange={(e) => setPublishedDraft(e.target.checked)} />
+                  Published
+                </label>
+              </div>
+            </div>
+            <div className="pt-6 border-t border-border">
+              <h2 className="text-lg font-semibold mb-1">Quizzes</h2>
+              <label className="flex items-center gap-3 mt-4">
+                <input type="checkbox" checked={isQuizDraft} onChange={(e) => setIsQuizDraft(e.target.checked)} className="w-4 h-4" />
+                <span className="font-medium">Enable Quiz Mode</span>
+              </label>
+            </div>
+            <div className="pt-6 border-t border-border flex justify-end">
+              <Button onClick={() => void saveMeta()} disabled={savingMeta}>Save Settings</Button>
+            </div>
+          </div>
+        )}
 
-          <DragOverlay>
+        {activeTab === "leaderboard" && (
+          <div className="bg-card border border-border rounded-[12px] p-6 shadow-sm min-h-[400px]">
+            <h2 className="text-2xl font-bold mb-4">Live Leaderboard</h2>
+                        <div id="leaderboard-container" className="space-y-4">
+              {leaderboard.length === 0 ? (
+                <div className="rounded-lg border border-dashed bg-muted/20 p-12 text-center text-muted-foreground flex flex-col items-center">
+                  <span className="text-4xl mb-3">🏆</span>
+                  <p>Waiting for submissions...</p>
+                </div>
+              ) : (
+                leaderboard.map((sub, idx) => (
+                  <div key={sub.id} className="flex items-center justify-between p-4 border rounded-lg bg-card shadow-sm animate-in slide-in-from-bottom-2">
+                    <div className="flex items-center gap-4">
+                      <span className="text-2xl font-bold text-muted-foreground w-8">{idx + 1}.</span>
+                      <div>
+                        <p className="font-semibold">{sub.id.split("-")[0]}</p>
+                        <p className="text-xs text-muted-foreground">Submitted at {new Date(sub.submitted_at).toLocaleTimeString()}</p>
+                      </div>
+                    </div>
+                    <div className="text-xl font-bold text-primary">{sub.score} <span className="text-sm font-normal text-muted-foreground">pts</span></div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        <DragOverlay>
             {activeId && String(activeId).startsWith("new-") ? (
               <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3 shadow-sm opacity-80">
                 <span className="text-sm font-medium">New Block</span>

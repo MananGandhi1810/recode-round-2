@@ -84,6 +84,11 @@ async def create_form(
 ):
     await _ensure_org_membership(conn, org_id, str(user.id))
     new_form = await FormService.create_form(org_id=org_id, form_in=form_in)
+    
+    org_row = await conn.fetchrow("SELECT slug FROM organizations WHERE id = $1::uuid", org_id)
+    if org_row:
+        new_form.organization_slug = org_row["slug"]
+        
     return new_form
 
 @router.get("/organization/{org_id}", response_model=List[FormResponse])
@@ -93,7 +98,14 @@ async def list_org_forms(
     user: AuthUser = Depends(get_current_user),
 ):
     await _ensure_org_membership(conn, org_id, str(user.id))
-    return await FormService.get_org_forms(org_id=org_id)
+    forms = await FormService.get_org_forms(org_id=org_id)
+    
+    org_row = await conn.fetchrow("SELECT slug FROM organizations WHERE id = $1::uuid", org_id)
+    if org_row:
+        for f in forms:
+            f.organization_slug = org_row["slug"]
+            
+    return forms
 
 @router.get("/{form_id}", response_model=FormResponse)
 async def get_form(
@@ -105,6 +117,11 @@ async def get_form(
     if not form:
         raise HTTPException(404, "Form not found")
     await _ensure_org_membership(conn, str(form.organization_id), str(user.id))
+    
+    org_row = await conn.fetchrow("SELECT slug FROM organizations WHERE id = $1::uuid", form.organization_id)
+    if org_row:
+        form.organization_slug = org_row["slug"]
+        
     return form
 
 @router.patch("/{form_id}", response_model=FormResponse)
@@ -195,6 +212,7 @@ async def websocket_endpoint(
                                 "name": updated_form.name,
                                 "description": updated_form.description,
                                 "is_published": updated_form.is_published,
+                                "theme": updated_form.theme,
                             },
                         }
                     await manager.broadcast_to_form(

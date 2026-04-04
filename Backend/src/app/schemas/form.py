@@ -59,9 +59,14 @@ class FormCreate(BaseModel):
 class FormResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID
+    organization_slug: Optional[str] = None
     name: str
+    slug: str
     description: Optional[str] = None
     is_published: bool
+    theme: str = "minimal"
+    is_quiz: bool = False
+    expires_at: Optional[datetime] = None
     schema_snapshot: Dict[str, Any]
     created_at: datetime
     updated_at: datetime
@@ -74,6 +79,10 @@ class FormUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     is_published: Optional[bool] = None
+    theme: Optional[str] = None
+    slug: Optional[str] = None
+    is_quiz: Optional[bool] = None
+    expires_at: Optional[datetime] = None
 
 
 class FormEventCreate(BaseModel):

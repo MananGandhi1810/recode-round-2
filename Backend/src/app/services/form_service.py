@@ -1,3 +1,4 @@
+import secrets
 import uuid
 import datetime
 from typing import Optional, List, Dict, Any
@@ -10,14 +11,19 @@ class FormService:
     async def create_form(org_id: str, form_in: FormCreate) -> FormResponse:
         db = get_mongo_db()
         form_id = str(uuid.uuid4())
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC)
+        # Generate a simple slug from name + short random string
+        slug = form_in.name.lower().replace(" ", "-")[:50] + "-" + secrets.token_hex(3)
         doc = {
             "_id": form_id,
             "organization_id": org_id,
             "name": form_in.name,
+            "slug": slug,
             "description": form_in.description,
             "is_published": False,
             "schema_snapshot": {"blocks": []},
+            "theme": "minimal",
+            "is_quiz": False,
             "created_at": now,
             "updated_at": now,
         }
@@ -45,8 +51,12 @@ class FormService:
             id=uuid.UUID(doc["_id"]),
             organization_id=uuid.UUID(doc["organization_id"]),
             name=doc["name"],
+            slug=doc.get("slug", ""),
             description=doc.get("description"),
             is_published=doc.get("is_published", False),
+            theme=doc.get("theme", "minimal"),
+            is_quiz=doc.get("is_quiz", False),
+            expires_at=doc.get("expires_at"),
             schema_snapshot=doc.get("schema_snapshot", {}),
             created_at=doc["created_at"],
             updated_at=doc["updated_at"]
@@ -90,13 +100,17 @@ class FormService:
         if not doc:
             raise ValueError("Form not found")
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC)
         update_fields = {"updated_at": now}
 
         if event_in.event_type == "UPDATE_FORM_META":
             name = event_in.payload.get("name")
             description = event_in.payload.get("description")
             is_published = event_in.payload.get("is_published")
+            theme = event_in.payload.get("theme")
+            slug = event_in.payload.get("slug")
+            is_quiz = event_in.payload.get("is_quiz")
+            expires_at = event_in.payload.get("expires_at")
 
             if isinstance(name, str):
                 update_fields["name"] = name.strip() or doc["name"]
@@ -104,6 +118,24 @@ class FormService:
                 update_fields["description"] = description
             if isinstance(is_published, bool):
                 update_fields["is_published"] = is_published
+            if isinstance(theme, str):
+                update_fields["theme"] = theme
+            if isinstance(slug, str) and len(slug) > 2:
+                # Check unique
+                exists = await db.forms.find_one({"slug": slug, "_id": {"$ne": form_id}})
+                if not exists:
+                    update_fields["slug"] = slug
+            if isinstance(is_quiz, bool):
+                update_fields["is_quiz"] = is_quiz
+            
+            if expires_at is not None:
+                try:
+                    # Convert to datetime if it's string
+                    update_fields["expires_at"] = datetime.datetime.fromisoformat(str(expires_at).replace('Z', '+00:00'))
+                except:
+                    pass
+            elif "expires_at" in event_in.payload:
+                update_fields["expires_at"] = None
         else:
             snapshot = dict(doc.get("schema_snapshot", {}))
             new_snapshot = FormService._apply_event_to_snapshot(snapshot, event_in)

@@ -35,6 +35,16 @@ async def connect_to_db():
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 role VARCHAR(32) NOT NULL DEFAULT 'member'
             );
+            CREATE TABLE IF NOT EXISTS organization_invites (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+                email VARCHAR(255) NOT NULL,
+                role VARCHAR(32) NOT NULL DEFAULT 'member',
+                token VARCHAR(255) UNIQUE NOT NULL,
+                expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                created_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+            );
+
         ''')
 
 async def close_db_connection():

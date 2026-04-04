@@ -23,6 +23,11 @@ export type FormBlockConfig = {
   maxFileSizeStr?: string | null
   allowedFileTypes?: string[] | null
   logic?: LogicRule[] | null
+  points?: number | null
+  correctAnswer?: string | string[] | null
+  upiId?: string | null
+  upiAmount?: string | null
+  timerSeconds?: number | null
 }
 
 export type FormBlock = {
@@ -39,9 +44,14 @@ export type FormSchemaSnapshot = {
 export type FormRecord = {
   id: string
   organization_id: string
+  organization_slug?: string
   name: string
   description: string | null
   is_published: boolean
+  theme: string
+  slug: string
+  is_quiz: boolean
+  expires_at: string | null
   schema_snapshot: FormSchemaSnapshot
   created_at: string
   updated_at: string
