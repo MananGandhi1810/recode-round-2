@@ -193,7 +193,7 @@ export function FormPreview({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 transition-colors duration-300 md:p-8 form-root",
+        "form-root fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 transition-colors duration-300 md:p-8",
         tClass
       )}
     >

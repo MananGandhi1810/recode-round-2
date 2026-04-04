@@ -196,7 +196,11 @@ export default function UserOrganizationsPage() {
     }
   }
 
-  async function createForm(event: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) {
+  async function createForm(
+    event:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault()
     if (!selectedOrganizationId || !newFormName.trim()) {
       return
@@ -236,7 +240,11 @@ export default function UserOrganizationsPage() {
     }
   }
 
-  async function generateFormWithAI(event: React.MouseEvent<HTMLButtonElement> | React.FormEvent<HTMLFormElement>) {
+  async function generateFormWithAI(
+    event:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault()
     if (!selectedOrganizationId || !aiPrompt.trim()) {
       return
@@ -280,7 +288,7 @@ export default function UserOrganizationsPage() {
   async function deleteForm(orgId: string, formId: string) {
     if (
       !confirm(
-        'Are you sure you want to delete this form? This cannot be undone.'
+        "Are you sure you want to delete this form? This cannot be undone."
       )
     ) {
       return
@@ -536,9 +544,7 @@ export default function UserOrganizationsPage() {
             </div>
 
             {showNewForm && (
-              <form
-                className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4"
-              >
+              <form className="mb-6 flex flex-col gap-3 rounded-[10px] border border-border bg-card p-4">
                 <div className="flex flex-1 flex-col gap-3">
                   <input
                     value={newFormName}
@@ -566,16 +572,18 @@ export default function UserOrganizationsPage() {
                 </div>
 
                 <div className="border-t border-border pt-3">
-                  <p className="mb-2 text-sm font-medium">Or generate with AI:</p>
+                  <p className="mb-2 text-sm font-medium">
+                    Or generate with AI:
+                  </p>
                   <textarea
                     value={aiPrompt}
                     onChange={(event) => setAiPrompt(event.target.value)}
                     placeholder="Describe the form you want to create (e.g., 'A customer feedback survey with 5 questions about service quality')"
-                    className="h-20 w-full rounded-[8px] border border-input bg-background px-3 py-2 text-sm transition outline-none focus:border-ring resize-none"
+                    className="h-20 w-full resize-none rounded-[8px] border border-input bg-background px-3 py-2 text-sm transition outline-none focus:border-ring"
                   />
                 </div>
 
-                <div className="flex gap-3 flex-col sm:flex-row">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <Button
                     onClick={createForm}
                     disabled={savingForm || !newFormName.trim()}
@@ -586,7 +594,9 @@ export default function UserOrganizationsPage() {
                     ) : null}
                     Create form manually
                   </Button>
-                  <span className="flex items-center justify-center text-sm text-muted-foreground uppercase">or</span>
+                  <span className="flex items-center justify-center text-sm text-muted-foreground uppercase">
+                    or
+                  </span>
                   <Button
                     onClick={generateFormWithAI}
                     disabled={savingForm || !aiPrompt.trim()}

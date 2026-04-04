@@ -7,14 +7,15 @@ from google.genai import types
 from app.core.config import settings
 from app.schemas.form import FormBlock, FormBlockConfig, FormBlockOptions
 
+
 class AIFormService:
     @staticmethod
     async def generate_blocks(prompt: str) -> List[FormBlock]:
         if not settings.gemini_api_key:
             raise ValueError("GEMINI_API_KEY is not set")
-            
+
         client = genai.Client(api_key=settings.gemini_api_key)
-        
+
         system_instruction = """
         You are an expert form building AI. Your job is to convert the user's description into a structured JSON array of form blocks.
 
@@ -80,22 +81,24 @@ class AIFormService:
         """
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
                 response_mime_type="application/json",
-            )
+            ),
         )
-        
+
         try:
             content = response.text
             # Try to strip markdown if present, sometimes the model ignores instructions
             if content.startswith("```"):
-                content = re.sub(r"^```[a-z]*\n?(.*?)\n?```$", r"\1", content, flags=re.DOTALL)
+                content = re.sub(
+                    r"^```[a-z]*\n?(.*?)\n?```$", r"\1", content, flags=re.DOTALL
+                )
             parsed = json.loads(content)
             blocks_data = parsed.get("blocks", [])
-            
+
             blocks = []
             for b_data in blocks_data:
                 # Provide defaults and parse to FormBlock
@@ -104,7 +107,7 @@ class AIFormService:
                     b_data["config"] = {}
                 block = FormBlock(**b_data)
                 blocks.append(block)
-                
+
             return blocks
         except Exception as e:
             print(f"Error parsing AI response: {e}\nResponse: {response.text}")

@@ -29,9 +29,15 @@ class Settings(BaseSettings):
     resend_sender_email: str = Field(default="", alias="RESEND_SENDER_EMAIL")
     resend_sender_name: str = Field(default="", alias="RESEND_SENDER_NAME")
     frontend_url: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")
-    whatsapp_webhook_secret: str = Field(default="supersecretwhatsappkey", alias="WHATSAPP_WEBHOOK_SECRET")
-    whatsapp_basic_auth: str = Field(default="whatsappuser:whatsapppass", alias="WHATSAPP_BASIC_AUTH")
-    whatsapp_api_url: str = Field(default="http://rc-whatsapp:3001", alias="WHATSAPP_API_URL")
+    whatsapp_webhook_secret: str = Field(
+        default="supersecretwhatsappkey", alias="WHATSAPP_WEBHOOK_SECRET"
+    )
+    whatsapp_basic_auth: str = Field(
+        default="whatsappuser:whatsapppass", alias="WHATSAPP_BASIC_AUTH"
+    )
+    whatsapp_api_url: str = Field(
+        default="http://rc-whatsapp:3001", alias="WHATSAPP_API_URL"
+    )
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
 
 

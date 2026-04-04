@@ -69,6 +69,7 @@ class FormCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
 
+
 class FormGenerationRequest(BaseModel):
     prompt: str
     name: str = "AI Generated Form"

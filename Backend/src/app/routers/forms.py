@@ -19,7 +19,12 @@ from app.dependencies import get_current_user
 from app.schemas.auth import AuthUser
 from app.services.form_service import FormService
 from app.services.websocket_manager import manager
-from app.schemas.form import FormResponse, FormCreate, FormEventCreate, FormGenerationRequest
+from app.schemas.form import (
+    FormResponse,
+    FormCreate,
+    FormEventCreate,
+    FormGenerationRequest,
+)
 from app.services.ai_form_service import AIFormService
 
 from fastapi.responses import StreamingResponse
@@ -201,6 +206,7 @@ async def create_form(
 
     return new_form
 
+
 @router.post("/organization/{org_id}/generate", response_model=FormResponse)
 async def generate_form_with_ai(
     org_id: str,
@@ -209,37 +215,36 @@ async def generate_form_with_ai(
     user: AuthUser = Depends(get_current_user),
 ):
     await _ensure_org_membership(conn, org_id, str(user.id))
-    
+
     # Ask Gemini for form blocks
     try:
         blocks = await AIFormService.generate_blocks(request.prompt)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        
+
     # Create the form with basic details
     form_in = FormCreate(name=request.name, description=request.description)
     new_form = await FormService.create_form(org_id=org_id, form_in=form_in)
-    
+
     # Add AI-generated blocks to form
     for block in blocks:
         await FormService.process_event(
             form_id=str(new_form.id),
             user_id=str(user.id),
             event_in=FormEventCreate(
-                event_type="ADD_BLOCK",
-                payload={"block": block.model_dump()}
-            )
+                event_type="ADD_BLOCK", payload={"block": block.model_dump()}
+            ),
         )
-    
+
     # Fetch final generated form with blocks
     final_form = await FormService.get_form(str(new_form.id))
-    
+
     org_row = await conn.fetchrow(
         "SELECT slug FROM organizations WHERE id = $1::uuid", org_id
     )
     if org_row:
         final_form.organization_slug = org_row["slug"]
-        
+
     return final_form
 
 
@@ -340,13 +345,14 @@ async def websocket_endpoint(
 
     import hashlib
     import colorsys
-    h = int(hashlib.md5(str(user.id).encode()).hexdigest()[:8], 16) / 0xffffffff
+
+    h = int(hashlib.md5(str(user.id).encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
     rgb = colorsys.hsv_to_rgb(h, 0.6, 0.8)
     color = f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
 
     user_meta = {
         "userId": str(user.id),
-        "label": user.full_name or user.email.split('@')[0],
+        "label": user.full_name or user.email.split("@")[0],
         "initials": _email_initials(user.full_name or user.email),
         "color": color,
     }

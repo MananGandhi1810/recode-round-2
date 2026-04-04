@@ -12,8 +12,10 @@ api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 
+
 class AiGenerateRequest(BaseModel):
     prompt: str
+
 
 SYSTEM_PROMPT = """
 You are a form generation assistant. Your goal is to generate a list of form blocks in JSON format based on a user prompt.
@@ -33,6 +35,7 @@ Each block object must follow this schema:
 Respond ONLY with the JSON. Do not include markdown formatting or explanations.
 """
 
+
 @router.post("/generate")
 async def generate_form_structure(payload: AiGenerateRequest):
     if not api_key:
@@ -40,23 +43,28 @@ async def generate_form_structure(payload: AiGenerateRequest):
         return {
             "blocks": [
                 {"id": "q_demo1", "type": "h1", "label": "Demo Quiz", "config": {}},
-                {"id": "q_demo2", "type": "short_text", "label": "What is your name?", "config": {"required": True}}
+                {
+                    "id": "q_demo2",
+                    "type": "short_text",
+                    "label": "What is your name?",
+                    "config": {"required": True},
+                },
             ]
         }
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(
             f"{SYSTEM_PROMPT}\n\nUser Request: {payload.prompt}"
         )
-        
+
         # Clean response text if it has markdown
         text = response.text.strip()
         if text.startswith("```json"):
             text = text[7:]
         if text.endswith("```"):
             text = text[:-3]
-        
+
         return json.loads(text)
     except Exception as e:
         print(f"AI Error: {e}")

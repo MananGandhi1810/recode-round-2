@@ -25,11 +25,13 @@ def get_session(phone_number: str) -> dict | None:
 def set_session(phone_number: str, session_data: dict):
     # Session expires after 1 hour (3600 seconds)
     redis_client.set(
-        f"whatsapp:session:{phone_number}", json.dumps(session_data), ex=3600)
+        f"whatsapp:session:{phone_number}", json.dumps(session_data), ex=3600
+    )
 
 
 def clear_session(phone_number: str):
     redis_client.delete(f"whatsapp:session:{phone_number}")
+
 
 # --- WhatsApp API Communication ---
 
@@ -45,16 +47,18 @@ async def send_whatsapp_message(phone_number: str, message: str):
             response = await client.post(
                 f"{WHATSAPP_API_URL}/send/message",
                 headers=headers,
-                data={"phone": phone_number, "message": message}
+                data={"phone": phone_number, "message": message},
             )
             response.raise_for_status()
             print(f"WhatsApp message sent to {phone_number}: {message}")
         except httpx.HTTPStatusError as e:
             print(
-                f"Error sending WhatsApp message to {phone_number}: {e.response.status_code} - {e.response.text}")
+                f"Error sending WhatsApp message to {phone_number}: {e.response.status_code} - {e.response.text}"
+            )
         except httpx.RequestError as e:
             print(
                 f"Network error sending WhatsApp message to {phone_number}: {e}")
+
 
 # --- Form Logic ---
 
@@ -80,7 +84,7 @@ async def start_form_session(form_id: str, phone_numbers: List[str]):
         # Normalize phone number to WhatsApp JID format if necessary (e.g., add @s.whatsapp.net)
         # The go-whatsapp-web-multidevice expects just the number for msisdn, but webhook sends JID
         # For consistency, we'll store and use the number part.
-        normalized_number = number.split('@')[0] if '@' in number else number
+        normalized_number = number.split("@")[0] if "@" in number else number
 
         session = {
             "form_id": str(form.id),
@@ -142,11 +146,12 @@ async def handle_whatsapp_message(body: dict):
 
     if not sender_jid or not message_text:
         print(
-            f"Received webhook with missing sender or message body: {json.dumps(body)}")
+            f"Received webhook with missing sender or message body: {json.dumps(body)}"
+        )
         return
 
     # Normalize phone number to just the number part for session lookup
-    phone_number = "+"+sender_jid.split('@')[0]
+    phone_number = "+" + sender_jid.split("@")[0]
 
     session = get_session(phone_number)
     if not session:
@@ -167,9 +172,8 @@ async def handle_whatsapp_message(body: dict):
 
     # --- Answer Validation ---
     is_valid, error_message, processed_answer = validate_answer(
-        message_text, current_question)
-    
-    print(f"Validation result for {phone_number}: is_valid={is_valid}, error_message='{error_message}', processed_answer={processed_answer}")
+        message_text, current_question
+    )
 
     if is_valid:
         session["answers"][current_question.id] = processed_answer
@@ -177,7 +181,9 @@ async def handle_whatsapp_message(body: dict):
         set_session(phone_number, session)
         await send_question(phone_number, session)
     else:
-        await send_whatsapp_message(phone_number, f"Invalid input: {error_message}. Please try again.")
+        await send_whatsapp_message(
+            phone_number, f"Invalid input: {error_message}. Please try again."
+        )
         await send_question(phone_number, session)  # Re-send the question
 
 
@@ -192,14 +198,28 @@ def validate_answer(answer_text: str, question: FormBlock) -> (bool, str, Any):
     # Type-specific validation
     if question.type == "text":
         if config.minLength is not None and len(answer_text) < config.minLength:
-            return False, f"Answer must be at least {config.minLength} characters long.", None
+            return (
+                False,
+                f"Answer must be at least {config.minLength} characters long.",
+                None,
+            )
         if config.maxLength is not None and len(answer_text) > config.maxLength:
-            return False, f"Answer must be at most {config.maxLength} characters long.", None
+            return (
+                False,
+                f"Answer must be at most {config.maxLength} characters long.",
+                None,
+            )
         # Basic email/URL validation (can be expanded with regex)
         if config.validationType == "email" and "@" not in answer_text:
             return False, "Please enter a valid email address.", None
-        if config.validationType == "url" and not (answer_text.startswith("http://") or answer_text.startswith("https://")):
-            return False, "Please enter a valid URL (starting with http:// or https://).", None
+        if config.validationType == "url" and not (
+            answer_text.startswith("http://") or answer_text.startswith("https://")
+        ):
+            return (
+                False,
+                "Please enter a valid URL (starting with http:// or https://).",
+                None,
+            )
 
     elif question.type == "number":
         try:
@@ -218,22 +238,31 @@ def validate_answer(answer_text: str, question: FormBlock) -> (bool, str, Any):
 
         # User replies with 1-based index
         try:
-            selected_indices = [
-                int(idx.strip()) - 1 for idx in answer_text.split(',')]
+            selected_indices = [int(idx.strip()) - 1 for idx in answer_text.split(",")]
         except ValueError:
-            return False, "Please reply with the number(s) corresponding to your choice(s), separated by commas.", None
+            return (
+                False,
+                "Please reply with the number(s) corresponding to your choice(s), separated by commas.",
+                None,
+            )
 
         valid_options = []
         for idx in selected_indices:
             if 0 <= idx < len(config.options):
                 valid_options.append(config.options[idx].value)
             else:
-                return False, "Invalid option selected. Please choose from the available numbers.", None
+                return (
+                    False,
+                    "Invalid option selected. Please choose from the available numbers.",
+                    None,
+                )
 
         if question.type == "radio" and len(valid_options) > 1:
             return False, "Please select only one option.", None
 
-        processed_answer = valid_options if question.type == "checkbox" else valid_options[0]
+        processed_answer = (
+            valid_options if question.type == "checkbox" else valid_options[0]
+        )
 
     # TODO: Add validation for other types like 'date', 'file', 'upi'
 
@@ -250,21 +279,26 @@ async def submit_form(phone_number: str, session: dict):
     # Convert collected answers into the FormSubmission schema
     field_responses: List[FieldResponse] = []
     for question_id, answer_value in collected_answers.items():
-        field_responses.append(FieldResponse(
-            block_id=question_id, value=answer_value))
+        field_responses.append(FieldResponse(block_id=question_id, value=answer_value))
 
     form_submission = FormSubmission(
         form_id=form_id,
         organization_id=organization_id,
         responses=field_responses,
         submitted_by_whatsapp=True,
-        whatsapp_phone_number=phone_number
+        whatsapp_phone_number=phone_number,
     )
 
     try:
         await FormService.submit_form_response(form_submission)
         clear_session(phone_number)
-        await send_whatsapp_message(phone_number, f"Thank you for completing the form '{form_name}'! Your responses have been submitted.")
+        await send_whatsapp_message(
+            phone_number,
+            f"Thank you for completing the form '{form_name}'! Your responses have been submitted.",
+        )
     except Exception as e:
         print(f"Error submitting form for {phone_number}: {e}")
-        await send_whatsapp_message(phone_number, "There was an error submitting your form. Please try again later.")
+        await send_whatsapp_message(
+            phone_number,
+            "There was an error submitting your form. Please try again later.",
+        )

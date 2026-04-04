@@ -22,7 +22,10 @@ interface SendWhatsappFormModalProps {
   children: React.ReactNode
 }
 
-export function SendWhatsappFormModal({ formId, children }: SendWhatsappFormModalProps) {
+export function SendWhatsappFormModal({
+  formId,
+  children,
+}: SendWhatsappFormModalProps) {
   const [phoneNumbers, setPhoneNumbers] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const [isOpen, setIsOpen] = React.useState(false)

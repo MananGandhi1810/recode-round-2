@@ -10,7 +10,9 @@ class WhatsappConversation(BaseModel):
     form_id: str
     current_block_index: int = 0
     partial_answers: Dict[str, Any] = Field(default_factory=dict)
-    status: str = "started"  # e.g., "started", "awaiting_answer", "completed", "cancelled"
+    status: str = (
+        "started"  # e.g., "started", "awaiting_answer", "completed", "cancelled"
+    )
     device_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

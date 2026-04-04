@@ -296,7 +296,9 @@ export default function PublicFormPage() {
       }
     } catch (err: any) {
       if (err.detail?.block_id) {
-        const blockIndex = visibleBlocks.findIndex(b => b.id === err.detail.block_id)
+        const blockIndex = visibleBlocks.findIndex(
+          (b) => b.id === err.detail.block_id
+        )
         if (blockIndex !== -1) {
           setCurrentStep(blockIndex)
           setValidationError(err.detail.message)
@@ -390,7 +392,7 @@ export default function PublicFormPage() {
   return (
     <div
       className={cn(
-        "flex min-h-screen flex-col items-center justify-center transition-colors duration-300 form-root",
+        "form-root flex min-h-screen flex-col items-center justify-center transition-colors duration-300",
         isEmbed ? "p-0" : "p-4 md:p-8",
         tClass
       )}
