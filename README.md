@@ -2,7 +2,18 @@
 
 ![Screenshot](assets/screenshot.png)
 
+> **2nd Place Winner at ACM MPSTME ReCode 2026**
+
 FormBar is a modern, full-stack application for building and managing forms, featuring a FastAPI backend and a Next.js frontend.
+
+## Features
+
+- **AI-Powered Forms**: Seamlessly generate, optimize, and interact with forms using built-in AI capabilities.
+- **Interactive WhatsApp Bot**: Collect form responses seamlessly through an intelligent, conversational WhatsApp bot. Users can fill out forms entirely within their WhatsApp chat interface.
+- **Embeddable Widget**: Easily integrate forms into any external website using a lightweight, drop-in JavaScript widget.
+- **Organization & Workspace Management**: Multi-tenant architecture supporting team collaboration, projects, and role-based access.
+- **Real-Time Updates**: WebSocket integration for live data syncing and notifications.
+- **Robust Tech Stack**: Lightning-fast API powered by FastAPI (Python), state-of-the-art Next.js 16 frontend, and a highly scalable data layer (PostgreSQL, ClickHouse, MongoDB, Redis, and RustFS).
 
 ## Architecture
 
