@@ -191,11 +191,36 @@ class FormService:
     async def submit_form_response(submission: FormSubmission):
         db = get_mongo_db()
         now = datetime.datetime.now(datetime.UTC)
+        
+        answers = {}
+        if submission.responses:
+            for r in submission.responses:
+                 answers[r.block_id] = r.value
+                 
+        form_doc = await db.forms.find_one({"_id": str(submission.form_id)})
+        score = 0
+        if form_doc and form_doc.get("is_quiz"):
+            for block in form_doc.get("schema_snapshot", {}).get("blocks", []):
+                ans = answers.get(block.get("id"))
+                if not ans:
+                    continue
+                corr = block.get("config", {}).get("correctAnswer")
+                if not corr:
+                    continue
+                pts = block.get("config", {}).get("points", 0) or 0
+                if isinstance(corr, list) and isinstance(ans, list):
+                    if set(corr) == set(ans):
+                        score += pts
+                elif str(corr).lower() == str(ans).lower():
+                    score += pts
+
         submission_doc = {
             "_id": str(uuid.uuid4()),
             "form_id": str(submission.form_id),
             "organization_id": str(submission.organization_id),
             "responses": [r.model_dump() for r in submission.responses],
+            "answers": answers,
+            "score": score,
             "submitted_at": now,
             "submitted_by_whatsapp": submission.submitted_by_whatsapp,
             "whatsapp_phone_number": submission.whatsapp_phone_number,

@@ -59,6 +59,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { FormPreview } from "@/components/form-preview"
 import { cn } from "@/lib/utils"
@@ -687,6 +688,7 @@ export default function FormEditorPage() {
   const [aiPrompt, setAiPrompt] = React.useState("")
   const [isGeneratingAi, setIsGeneratingAi] = React.useState(false)
   const [customCss, setCustomCss] = React.useState("")
+  const [inspectSubmission, setInspectSubmission] = React.useState<any | null>(null)
   
   const socketRef = React.useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
@@ -707,6 +709,12 @@ export default function FormEditorPage() {
       setSubsLoading(false)
     }
   }, [formId])
+
+  React.useEffect(() => {
+    if (activeTab === "submissions") {
+      void loadSubmissions()
+    }
+  }, [activeTab, loadSubmissions])
 
   const exportCsv = () => {
     const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
@@ -1071,7 +1079,7 @@ export default function FormEditorPage() {
                             <td className="px-8 py-5 text-xs font-black font-mono text-muted-foreground">{new Date(sub.submitted_at).toLocaleString()}</td>
                             {isQuizDraft && <td className="px-8 py-5"><span className="rounded-lg bg-emerald-500/10 px-3 py-1 font-black text-emerald-600 text-[10px] uppercase">{sub.score} Pts</span></td>}
                             {blocks.filter(b => !b.type.startsWith("h") && b.type !== "paragraph").slice(0, 5).map(b => <td key={b.id} className="px-8 py-5 font-bold text-muted-foreground/80 truncate max-w-[150px]">{String(sub.answers?.[b.id] || "—")}</td>)}
-                            <td className="px-8 py-5 text-right"><Button variant="ghost" size="sm" className="rounded-full h-9 px-5 font-black text-[10px] uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-primary-foreground" onClick={() => alert(JSON.stringify(sub.answers, null, 2))}>Inspect</Button></td>
+                            <td className="px-8 py-5 text-right"><Button variant="ghost" size="sm" className="rounded-full h-9 px-5 font-black text-[10px] uppercase tracking-widest text-primary opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-primary-foreground" onClick={() => setInspectSubmission(sub)}>Inspect</Button></td>
                           </tr>
                         ))}</tbody>
                       </table>
@@ -1115,6 +1123,29 @@ export default function FormEditorPage() {
           </DragOverlay>
         </DndContext>
       </div>
+
+      <Dialog open={!!inspectSubmission} onOpenChange={(open) => !open && setInspectSubmission(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Submission Details</DialogTitle>
+            <DialogDescription>
+              {inspectSubmission ? `Submitted at ${new Date(inspectSubmission.submitted_at).toLocaleString()} (Log ID: ${inspectSubmission.id})` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            {inspectSubmission && blocks.filter(b => !b.type.startsWith("h") && b.type !== "paragraph").map(b => (
+              <div key={b.id} className="space-y-1">
+                <p className="text-sm font-bold text-muted-foreground">{b.label || b.type}</p>
+                <div className="rounded-xl bg-muted/50 p-4 text-sm font-mono whitespace-pre-wrap">
+                  {typeof inspectSubmission.answers?.[b.id] === 'object' && inspectSubmission.answers?.[b.id] !== null 
+                    ? JSON.stringify(inspectSubmission.answers[b.id], null, 2) 
+                    : String(inspectSubmission.answers?.[b.id] || "—")}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
