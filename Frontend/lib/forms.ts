@@ -65,6 +65,15 @@ export type FormEventPayload = {
   payload: Record<string, unknown>
 }
 
+export type FormSubmissionRecord = {
+  id: string;
+  form_id: string;
+  organization_id: string;
+  answers: Record<string, string | string[]>;
+  submitted_at: string;
+  score?: number;
+}
+
 function asBlocks(value: unknown): FormBlock[] {
   if (!Array.isArray(value)) {
     return []

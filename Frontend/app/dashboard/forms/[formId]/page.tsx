@@ -26,7 +26,10 @@ import {
   Maximize2,
   FileSpreadsheet,
   CheckCircle2,
+  Send,
 } from "lucide-react"
+
+import { SendWhatsappFormModal } from "@/components/SendWhatsappFormModal"
 
 import {
   DndContext,
@@ -58,12 +61,23 @@ import {
   type FormEventPayload,
   type FormRecord,
   getWsBaseUrl,
+  type LogicRule,
+  type LogicCondition,
+  type FormSubmissionRecord,
 } from "@/lib/forms"
 
-type PresenceUser = {
-  userId: string
-  initials: string
-  color: string
+type SubmissionScoreUpdate = {
+  id: string;
+  score: number;
+  answers: Record<string, string | string[]>;
+  submitted_at: string; // ISO format string
+}
+
+type SubmissionScoreUpdate = {
+  id: string;
+  score: number;
+  answers: Record<string, string | string[]>;
+  submitted_at: string; // ISO format string
 }
 
 type WsIncoming =
@@ -72,7 +86,7 @@ type WsIncoming =
   | { type: "CURSOR_LEAVE"; userId: string }
   | { type: "CURSOR_MOVE"; userId: string; x: number; y: number }
   | { type: "FORM_EVENT"; payload: FormEventPayload }
-  | { type: "SCORE_UPDATE"; submission: any }
+  | { type: "SCORE_UPDATE"; submission: SubmissionScoreUpdate }
   | { type: "ERROR"; message: string }
 
 function DraggableSidebarItem({
@@ -82,7 +96,7 @@ function DraggableSidebarItem({
 }: {
   type: string
   label: string
-  icon: any
+  icon: React.ElementType
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `new-${type}`,
@@ -152,7 +166,7 @@ function BlockItem({
   const addLogicRule = () => {
     onChange(block.id, (b) => {
       const currentLogic = b.config.logic || []
-      const newRule: any = {
+      const newRule: LogicRule = {
         id: crypto.randomUUID(),
         action: "show",
         conditionMatch: "all",
@@ -572,7 +586,7 @@ function BlockItem({
               </button>
             </div>
             <div className="space-y-4">
-              {(block.config.logic || []).map((rule: any, ruleIdx: number) => (
+              {(block.config.logic || []).map((rule: LogicRule, ruleIdx: number) => (
                 <div
                   key={rule.id}
                   className="rounded border border-border/50 bg-muted/20 p-3"
@@ -619,7 +633,7 @@ function BlockItem({
                       onClick={() =>
                         onChange(block.id, (b) => {
                           const next = (b.config.logic || []).filter(
-                            (r: any) => r.id !== rule.id
+                            (r: LogicRule) => r.id !== rule.id
                           )
                           return { ...b, config: { ...b.config, logic: next } }
                         })
@@ -631,7 +645,7 @@ function BlockItem({
                   </div>
 
                   <div className="space-y-2">
-                    {rule.conditions.map((cond: any, condIdx: number) => (
+                    {rule.conditions.map((cond: LogicCondition, condIdx: number) => (
                       <div
                         key={condIdx}
                         className="flex flex-wrap items-center gap-2"
@@ -675,7 +689,7 @@ function BlockItem({
                               const nextConds = [...next[ruleIdx].conditions]
                               nextConds[condIdx] = {
                                 ...nextConds[condIdx],
-                                operator: e.target.value as any,
+                                operator: e.target.value as LogicCondition['operator'],
                               }
                               next[ruleIdx] = {
                                 ...next[ruleIdx],
@@ -1263,6 +1277,12 @@ export default function FormEditorPage() {
               <Eye className="mr-2 h-4 w-4" />
               Preview
             </Button>
+            <SendWhatsappFormModal formId={formId}>
+              <Button variant="outline" size="sm" className="rounded-[8px]">
+                <Send className="mr-2 h-4 w-4" />
+                Send via WhatsApp
+              </Button>
+            </SendWhatsappFormModal>
             <ThemeToggle />
           </div>
         </header>

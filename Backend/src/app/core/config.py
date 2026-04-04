@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         default=60, alias="ACCESS_TOKEN_EXPIRE_MINUTES"
     )
     database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/workspace_auth",
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/recode",
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     resend_sender_email: str = Field(default="", alias="RESEND_SENDER_EMAIL")
     resend_sender_name: str = Field(default="", alias="RESEND_SENDER_NAME")
     frontend_url: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")
+    whatsapp_webhook_secret: str = Field(default="supersecretwhatsappkey", alias="WHATSAPP_WEBHOOK_SECRET")
+    whatsapp_basic_auth: str = Field(default="whatsappuser:whatsapppass", alias="WHATSAPP_BASIC_AUTH")
+    whatsapp_api_url: str = Field(default="http://rc-whatsapp:3001", alias="WHATSAPP_API_URL")
 
 
 @lru_cache(maxsize=1)

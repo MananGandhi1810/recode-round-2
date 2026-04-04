@@ -40,7 +40,7 @@ services:
 
   postgres:
     image: postgres:alpine
-    container_name: postgres
+    container_name: rc-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -49,13 +49,13 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - rc_postgres_data:/var/lib/postgresql/data
     networks:
       - formbar
 
   redis:
     image: redis:alpine
-    container_name: redis
+    container_name: rc-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -66,7 +66,7 @@ services:
 
   mongodb:
     image: mongo:latest
-    container_name: mongodb
+    container_name: rc-mongodb
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -78,21 +78,9 @@ services:
     networks:
       - formbar
 
-  clickhouse:
-    image: clickhouse/clickhouse-server:latest
-    container_name: clickhouse
-    restart: unless-stopped
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse
-    networks:
-      - formbar
-
   rustfs:
     image: rustfs/rustfs:latest
-    container_name: rustfs
+    container_name: rc-rustfs
     restart: unless-stopped
     environment:
       RUSTFS_ACCESS_KEY: rustfsadmin
@@ -106,13 +94,35 @@ services:
     networks:
       - formbar
 
+  whatsapp:
+    image: aldinokemal2104/go-whatsapp-web-multidevice
+    container_name: rc-whatsapp
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - whatsapp_data:/app/storages
+    command:
+      - rest
+      - --port=3001
+      - --debug=true
+      - --os=Formbar
+      - --account-validation=false
+      - --webhook="http://backend:8000/webhook"
+      - --webhook-secret="${WHATSAPP_WEBHOOK_SECRET}"
+      - --basic-auth="${WHATSAPP_BASIC_AUTH}"
+      - --webhook-events="message"
+    networks:
+      - formbar
+
 networks:
   formbar:
     driver: bridge
 
 volumes:
-  postgres_data:
+  rc_postgres_data:
   redis_data:
   mongodb_data:
   clickhouse_data:
   rustfs_data:
+  whatsapp_data:

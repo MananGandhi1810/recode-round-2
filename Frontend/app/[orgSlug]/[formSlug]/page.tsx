@@ -114,15 +114,17 @@ export default function PublicFormPage() {
     [answers]
   )
 
+  import { type FormRecord, type FormBlock, type LogicCondition, type LogicRule } from "@/lib/forms"
+// ...
   const evaluateLogic = React.useCallback(
-    (block: any) => {
+    (block: FormBlock) => {
       if (!block.config?.logic || block.config.logic.length === 0) return true
 
       let isVisible = true
-      for (const rule of block.config.logic) {
+      for (const rule of block.config.logic as LogicRule[]) {
         if (!rule.conditions || rule.conditions.length === 0) continue
 
-        const conditionResults = rule.conditions.map((cond: any) => {
+        const conditionResults = rule.conditions.map((cond: LogicCondition) => {
           const val = answers[cond.blockId]
           const condValue = cond.value
 

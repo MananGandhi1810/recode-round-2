@@ -104,3 +104,16 @@ class FormUpdate(BaseModel):
 class FormEventCreate(BaseModel):
     event_type: str
     payload: Dict[str, Any]
+
+
+class FieldResponse(BaseModel):
+    block_id: str
+    value: Any
+
+
+class FormSubmission(BaseModel):
+    form_id: uuid.UUID
+    organization_id: uuid.UUID
+    responses: List[FieldResponse]
+    submitted_by_whatsapp: bool = False
+    whatsapp_phone_number: Optional[str] = None
