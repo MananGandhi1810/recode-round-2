@@ -1329,6 +1329,21 @@ export default function FormEditorPage() {
 
   return (
     <main className="flex h-screen flex-col overflow-hidden bg-background">
+      {isPreview && form && (
+        <FormPreview
+          form={{
+            ...form,
+            name: nameDraft,
+            description: descriptionDraft,
+            theme: themeDraft,
+            custom_css: customCss,
+            schema_snapshot: { blocks },
+            is_quiz: isQuizDraft,
+            redirect_url: redirectUrlDraft || null,
+          }}
+          onClose={() => setIsPreview(false)}
+        />
+      )}
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-6 shadow-sm">
         <div className="flex items-center gap-4">
           <Button
@@ -1382,64 +1397,51 @@ export default function FormEditorPage() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2 mr-4">
+            {presence.slice(0, 3).map((u) => (
+              <div
+                key={u.userId}
+                className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background text-[10px] font-black text-white ring-4 ring-primary/5"
+                style={{ backgroundColor: u.color }}
+                title={u.label}
+              >
+                {u.initials}
+              </div>
+            ))}
+          </div>
           <div className="flex items-center gap-2">
+            <SendWhatsappFormModal formId={formId}>
+              <Button variant="outline" size="sm" className="rounded-full h-9 font-bold px-5">
+                <Send className="mr-2 h-3.5 w-3.5" />
+                Send via WhatsApp
+              </Button>
+            </SendWhatsappFormModal>
             <Button
               variant="outline"
               size="sm"
               onClick={copyPublicUrl}
-              className="hidden rounded-[8px] sm:flex"
+              className="hidden h-9 rounded-full px-5 font-bold sm:flex"
             >
               {isCopied ? (
-                <>
-                  <Check className="mr-2 h-4 w-4 text-emerald-500" />
-                  Copied!
-                </>
+                <Check className="mr-2 h-3 w-3 text-emerald-500" />
               ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy Link
-                </>
+                <Copy className="mr-2 h-3 w-3" />
               )}
+              Copy Link
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsPreview(true)}
-              className="rounded-[8px]"
+              className="h-9 rounded-full px-5 font-bold"
             >
-              <Eye className="mr-2 h-4 w-4" />
+              <Eye className="mr-2 h-3 w-3" />
               Preview
             </Button>
-            <SendWhatsappFormModal formId={formId}>
-              <Button variant="outline" size="sm" className="rounded-[8px]">
-                <Send className="mr-2 h-4 w-4" />
-                Send via WhatsApp
-              </Button>
-            </SendWhatsappFormModal>
-            <ThemeToggle />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyPublicUrl}
-            className="hidden h-9 rounded-full px-5 font-bold sm:flex"
-          >
-            {isCopied ? (
-              <Check className="mr-2 h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="mr-2 h-3 w-3" />
-            )}
-            Copy Link
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsPreview(true)}
-            className="h-9 rounded-full px-5 font-bold"
-          >
-            <Eye className="mr-2 h-3 w-3" />
-            Preview
-          </Button>
           <div className="mx-1 h-6 w-px bg-border" />
           <ThemeToggle />
         </div>
@@ -2035,10 +2037,7 @@ export default function FormEditorPage() {
                               isPresentation ? "text-5xl" : "text-3xl"
                             )}
                           >
-                            {sub.answers?.[
-                              blocks.find((b) => b.type === "short_text")?.id ||
-                                ""
-                            ] || "Anonymous"}
+                            {sub.name || "Anonymous"}
                           </p>
                           <p className="mt-2 text-[10px] font-black tracking-[0.3em] text-muted-foreground uppercase opacity-50">
                             Log ID: {sub.id.slice(0, 8)}

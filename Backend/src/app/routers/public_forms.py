@@ -121,6 +121,12 @@ async def submit_form(form_id: str, payload: FormSubmission):
     doc["score"] = score
     await db.submissions.insert_one(doc)
 
+    # Find participant name
+    participant_name = "Anonymous"
+    name_block = next((b for b in form.schema_snapshot.get("blocks", []) if "name" in b.get("label", "").lower() or b.get("type") == "short_text"), None)
+    if name_block:
+        participant_name = payload.answers.get(name_block["id"], "Anonymous")
+
     # Broadcast to leaderboard
     await manager.broadcast_to_form(
         form_id,
@@ -129,13 +135,14 @@ async def submit_form(form_id: str, payload: FormSubmission):
             "submission": {
                 "id": sub_id,
                 "score": score,
+                "name": participant_name,
                 "answers": payload.answers,
                 "submitted_at": doc["submitted_at"].isoformat(),
             },
         },
     )
 
-    return {"id": sub_id, "message": "Success"}
+    return {"id": sub_id, "message": "Success", "score": score}
 
 
 class EmailCopyRequest(BaseModel):

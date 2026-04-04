@@ -255,6 +255,39 @@ export default function PublicFormPage() {
 
   const isSummaryStep = currentStep >= visibleBlocks.length
 
+  const quizScore = React.useMemo(() => {
+    if (!form?.is_quiz) return null
+
+    return (form.schema_snapshot?.blocks ?? []).reduce((score, block: any) => {
+      const points = Number(block.config?.points || 0)
+      if (!points) return score
+
+      const correctAnswer =
+        block.config?.correctAnswer ?? block.config?.correct_answer
+      const userAnswer = answers[block.id]
+
+      if (correctAnswer === undefined || correctAnswer === null) return score
+
+      if (Array.isArray(correctAnswer)) {
+        const userValues = Array.isArray(userAnswer)
+          ? userAnswer
+          : typeof userAnswer === "string" && userAnswer
+            ? [userAnswer]
+            : []
+
+        const isCorrect =
+          correctAnswer.length === userValues.length &&
+          correctAnswer.every((value: string) => userValues.includes(value))
+
+        return isCorrect ? score + points : score
+      }
+
+      const isCorrect =
+        String(userAnswer ?? "").trim() === String(correctAnswer).trim()
+      return isCorrect ? score + points : score
+    }, 0)
+  }, [form, answers])
+
   const handleAnswer = (blockId: string, value: string | string[]) => {
     setAnswers((prev) => ({ ...prev, [blockId]: value }))
   }
@@ -352,10 +385,35 @@ export default function PublicFormPage() {
         <div className="w-full max-w-md rounded-[16px] border border-inherit bg-inherit p-8 text-inherit shadow-sm">
           <div className="flex flex-col items-center text-center">
             <CheckCircle2 className="mb-4 h-12 w-12 text-emerald-500" />
-            <h1 className="mb-2 text-2xl font-bold">Submitted Successfully</h1>
-            <p className="mb-8 text-muted-foreground">
+            <h1 className="mb-2 text-2xl font-bold">
+              {form.is_quiz ? "Quiz Completed!" : "Submitted Successfully"}
+            </h1>
+            <p className="mb-4 text-muted-foreground">
               Thank you for filling out {form.name}.
             </p>
+
+            {form.is_quiz && quizScore !== null && (
+              <div className="mb-8 rounded-2xl bg-primary/5 p-6 ring-1 ring-primary/10">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">
+                  Your Performance
+                </p>
+                <div className="mt-2 flex items-baseline justify-center gap-1">
+                  <span className="text-6xl font-black tracking-tighter text-primary">
+                    {quizScore}
+                  </span>
+                  <span className="text-xl font-bold text-primary/40">
+                    /{" "}
+                    {form.schema_snapshot?.blocks.reduce(
+                      (acc, b) => acc + (b.config?.points || 0),
+                      0
+                    )}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs font-bold text-primary/60">
+                  Points Earned
+                </p>
+              </div>
+            )}
 
             {!emailSent ? (
               <form onSubmit={sendEmailCopy} className="w-full">
