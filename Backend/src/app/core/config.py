@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     whatsapp_webhook_secret: str = Field(default="supersecretwhatsappkey", alias="WHATSAPP_WEBHOOK_SECRET")
     whatsapp_basic_auth: str = Field(default="whatsappuser:whatsapppass", alias="WHATSAPP_BASIC_AUTH")
     whatsapp_api_url: str = Field(default="http://rc-whatsapp:3001", alias="WHATSAPP_API_URL")
+    gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
 
 
 @lru_cache(maxsize=1)

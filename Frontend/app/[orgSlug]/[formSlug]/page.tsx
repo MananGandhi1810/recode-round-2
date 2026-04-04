@@ -4,7 +4,6 @@ import * as React from "react"
 import { type FormRecord, type FormBlock, type LogicCondition, type LogicRule } from "@/lib/forms"
 import { useParams, useSearchParams } from "next/navigation"
 import { apiFetch } from "@/lib/api"
-import { type FormRecord } from "@/lib/forms"
 import { Button } from "@/components/ui/button"
 import {
   ArrowLeft,

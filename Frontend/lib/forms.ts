@@ -138,3 +138,25 @@ export function getWsBaseUrl() {
   }
   return apiBase.replace("http://", "ws://")
 }
+
+export async function generateForm(orgId: string, prompt: string, name: string = "AI Generated Form", description: string = ""): Promise<FormRecord> {
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("access_token="))
+    ?.split("=")[1]
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
+  const res = await fetch(`${apiUrl}/forms/organization/${orgId}/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ prompt, name, description }),
+  })
+  if (!res.ok) {
+    const data = await res.json()
+    throw new Error(data.detail ?? "Failed to generate form")
+  }
+  return res.json()
+}
